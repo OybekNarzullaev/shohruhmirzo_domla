@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Athlete, SportType, TrainingSession, Exercise, MuscleFatigue, Muscle
+from .models import Athlete, AthleteParams, SportType, AthleteLevel, TrainingSession, Exercise, MuscleFatigue, Muscle
 
 
 class SportTypeSerializer(serializers.ModelSerializer):
@@ -8,12 +8,30 @@ class SportTypeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class AthleteParamsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AthleteParams
+        fields = "__all__"
+
+
+class AthleteLevelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AthleteLevel
+        fields = "__all__"
+
+
 class AthleteSerializer(serializers.ModelSerializer):
     fullname = serializers.ReadOnlyField()
+    params = serializers.SerializerMethodField(read_only=True)
+    level = AthleteLevelSerializer(read_only=True)
 
     class Meta:
         model = Athlete
         fields = "__all__"
+
+    def get_params(self, obj):
+        params = obj.params.last()
+        return AthleteParamsSerializer(params).data
 
 
 class TrainingSessionSerializer(serializers.ModelSerializer):

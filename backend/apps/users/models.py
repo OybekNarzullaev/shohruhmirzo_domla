@@ -24,13 +24,13 @@ class User(AbstractUser):
     description = models.TextField("Izoh", blank=True, null=True)
 
     @property
-    def fullname(self):
+    def name(self):
         """Foydalanuvchining to‘liq ismi"""
         parts = [self.last_name, self.first_name, self.patronymic]
         return " ".join(p for p in parts if p)
 
     def __str__(self):
-        return self.fullname or self.username
+        return self.name or self.username
 
     class Meta:
         verbose_name = "Foydalanuvchi"

@@ -23,14 +23,14 @@ class Athlete(models.Model):
     updated_at = models.DateTimeField("Yangilangan sana", auto_now=True)
 
     @property
-    def fullname(self) -> str:
+    def name(self) -> str:
         """Foydalanuvchining to‘liq ismi (Familiya Ism Otasining ismi)."""
         if self.patronymic:
             return f"{self.lastname} {self.firstname} {self.patronymic}"
         return f"{self.lastname} {self.firstname}"
 
     def __str__(self):
-        return f"{self.firstname} {self.lastname}"
+        return f"{self.name} {self.lastname}"
 
     class Meta:
         verbose_name = "Sportchi"

@@ -13,6 +13,8 @@ import { Link, useLocation } from "react-router";
 import ListItem from "@mui/material/ListItem";
 import Divider from "@mui/material/Divider";
 import { useAuthStore } from "@/store/auth";
+import Drawer from "@mui/material/Drawer";
+import { useState } from "react";
 
 const MENU = [
   {
@@ -27,46 +29,22 @@ const MENU = [
   },
 ];
 
+const drawerWidth = 240;
+
 export const Sidebar = () => {
   const theme = useTheme();
   const { isOpen } = useSidebar();
   const { user } = useAuthStore();
   const location = useLocation();
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
   return (
-    <Box
-      sx={{
-        width: {
-          xl: isOpen ? "20%" : "4%",
-          lg: isOpen ? "20%" : "4%",
-          md: isOpen ? "50%" : "10%",
-          sm: isOpen ? "100%" : "0%",
-          xs: isOpen ? "100%" : "0%",
-        },
-        display: {
-          xl: isOpen ? "block" : "block",
-          lg: isOpen ? "block" : "block",
-          md: isOpen ? "block" : "block",
-          sm: isOpen ? "block" : "none",
-          xs: isOpen ? "block" : "none",
-        },
-        position: {
-          xl: "static",
-          lg: "static",
-          md: "static",
-          sm: "absolute",
-          xs: "absolute",
-        },
-        top: 64,
-        bottom: 0,
-        zIndex: {
-          sm: 1,
-          xs: 1,
-        },
-        height: "100%",
-        background: theme.palette.background.paper,
-      }}
-    >
+    <Box>
       <Stack p={5} gap={2} justifyContent={"center"} alignItems={"center"}>
         {isOpen && (
           <>
@@ -85,42 +63,74 @@ export const Sidebar = () => {
         )}
       </Stack>
       <Divider />
-      <List>
-        {MENU.map((item, index) => {
-          const isActive =
-            item.url === "/"
-              ? item.url === location.pathname
-              : location.pathname.startsWith(item.url);
+      {/* Sidebar - mobil versiya */}
+      <Box component="nav">
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
 
-          return (
-            <ListItem
-              to={item.url}
-              component={Link}
-              key={index}
-              sx={{
-                color: isActive
-                  ? theme.palette.background.default
-                  : theme.palette.text.primary,
-                backgroundColor: isActive
-                  ? theme.palette.primary.main
-                  : "transparent",
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  color: isActive
-                    ? theme.palette.background.default
-                    : theme.palette.text.secondary,
-                  minWidth: 40,
-                }}
-              >
-                <item.Icon />
-              </ListItemIcon>
-              {isOpen && <ListItemText primary={item.title} />}
-            </ListItem>
-          );
-        })}
-      </List>
+        {/* Sidebar - desktop versiya */}
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
+          }}
+          open
+        >
+          {drawer}
+        </Drawer>
+      </Box>
     </Box>
   );
 };
+
+const drawer = (
+  <List>
+    {MENU.map((item, index) => {
+      const isActive =
+        item.url === "/"
+          ? item.url === location.pathname
+          : location.pathname.startsWith(item.url);
+
+      return (
+        <ListItem
+          to={item.url}
+          component={Link}
+          key={index}
+          sx={{
+            color: isActive ? "background.default" : "text.primary",
+            backgroundColor: isActive ? "primary.main" : "transparent",
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              color: isActive ? "background.default" : "text.secondary",
+              minWidth: 40,
+            }}
+          >
+            <item.Icon />
+          </ListItemIcon>
+          <ListItemText primary={item.title} />
+        </ListItem>
+      );
+    })}
+  </List>
+);

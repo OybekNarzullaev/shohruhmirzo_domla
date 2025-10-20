@@ -31,7 +31,7 @@ class AthleteParamsInline(admin.TabularInline):
 # --- Asosiy admin modellar ---
 @admin.register(Athlete)
 class AthleteAdmin(admin.ModelAdmin):
-    list_display = ("fullname", "birth_year", "level", "created_at")
+    list_display = ("name", "birth_year", "level", "created_at")
     search_fields = ("firstname", "lastname", "level", "patronymic")
     list_filter = ("birth_year",)
     inlines = [AthleteParamsInline]
@@ -114,7 +114,7 @@ class MuscleFatigueAdmin(admin.ModelAdmin):
         "muscle__title",
         "muscle__name",
         "muscle__shortname",
-        "exercise__training__athlete__fullname",
+        "exercise__training__athlete__name",
         "exercise__training__title",
     )
     list_filter = ("muscle__shortname",)

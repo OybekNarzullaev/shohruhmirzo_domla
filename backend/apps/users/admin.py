@@ -6,7 +6,7 @@ from .models import User, Role
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     # Admin ro‘yxatda ko‘rinadigan ustunlar
-    list_display = ("username", "fullname", "email",
+    list_display = ("username", "name", "email",
                     "role", "is_active", "is_staff")
     list_filter = ("role", "is_active", "is_staff", "is_superuser")
     search_fields = ("username", "first_name",
