@@ -1,4 +1,5 @@
 
+
 from pathlib import Path
 import os
 
@@ -25,8 +26,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'knox',
+    'django_cleanup.apps.CleanupConfig',
     'apps.core',
     'apps.users',
+    'apps.stats',
 ]
 
 REST_FRAMEWORK = {

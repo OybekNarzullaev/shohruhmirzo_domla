@@ -13,6 +13,7 @@ class User(AbstractUser):
     # qo‘shimcha maydonlar
     patronymic = models.CharField("Otasining ismi", max_length=50, blank=True)
     phone = models.CharField("Telefon raqam", max_length=20, blank=True)
+    major = models.CharField("Telefon raqam", max_length=20, blank=True)
     avatar = models.ImageField(
         upload_to='user_avatars/', null=True, blank=True
     )
@@ -20,6 +21,7 @@ class User(AbstractUser):
         "Rol", max_length=20,
         choices=Role.choices, default=Role.TEACHER
     )
+    description = models.TextField("Izoh", blank=True, null=True)
 
     @property
     def fullname(self):

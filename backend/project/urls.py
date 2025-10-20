@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/', include('apps.core.urls')),
     path('api/users/', include('apps.users.urls')),
     path('api/auth/', include('apps.users.auth.urls')),
+    path('api/stats/', include('apps.stats.urls')),
 ]
 
 # 🔹 Media fayllarni local rejimda ko‘rsatish

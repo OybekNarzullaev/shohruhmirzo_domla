@@ -1,4 +1,6 @@
 import { AthleteInfo } from "@/components/AthleteInfo";
+import { AdaptationChart } from "@/components/chars/AdaptationChart";
+import { FatigueChart } from "@/components/chars/FatigueChart";
 import { Lines } from "@/components/chars/Lines";
 import { PageContainer } from "@/layouts/PageContainer";
 import Stack from "@mui/material/Stack";
@@ -27,6 +29,12 @@ const ViewAthletePage = () => {
       </Stack>
       <Stack mt={2}>
         <Lines />
+      </Stack>
+      <Stack mt={2}>
+        <FatigueChart />
+      </Stack>
+      <Stack mt={2}>
+        <AdaptationChart />
       </Stack>
     </PageContainer>
   );
