@@ -1,17 +1,23 @@
-import LinearProgress from "@mui/material/LinearProgress";
 import Stack from "@mui/material/Stack";
 import LogoutIcon from "@mui/icons-material/Logout";
-import { Outlet, Navigate, useLocation } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { DashboardLayout, ThemeSwitcher } from "@toolpad/core/DashboardLayout";
 import { Account } from "@toolpad/core/Account";
+import { Backdrop, CircularProgress } from "@mui/material";
 
 import { useSessionStore } from "../store/auth";
+import { useEffect } from "react";
+import { getProfileAPI, logoutAPI } from "../api/auth";
 
 function CustomActions() {
   return (
     <Stack direction="row" alignItems="center">
       <ThemeSwitcher />
       <Account
+        localeText={{
+          accountSignOutLabel: "Tizimdan chiqish",
+          accountSignInLabel: "Tizimga kirish",
+        }}
         slotProps={{
           preview: {
             variant: "condensed",
@@ -40,22 +46,26 @@ function CustomActions() {
 }
 
 export default function Layout() {
-  const { session, loading } = useSessionStore();
+  const { session, loading, setSession, setLoading, token, clearSession } =
+    useSessionStore();
   const location = useLocation();
+  const navigation = useNavigate();
 
-  if (loading) {
-    return (
-      <div style={{ width: "100%" }}>
-        <LinearProgress />
-      </div>
-    );
-  }
-
-  if (!session) {
-    const redirectTo = `/sign-in?callbackUrl=${encodeURIComponent(location.pathname)}`;
-    return <Navigate to={redirectTo} replace />;
-  }
-
+  useEffect(() => {
+    if (token && !session) {
+      setLoading(true);
+      getProfileAPI()
+        .then((res) => {
+          setSession({
+            user: res.data,
+          });
+        })
+        .finally(() => setLoading(false));
+    } else if (!token) {
+      const redirectTo = `/sign-in?callbackUrl=${encodeURIComponent(location.pathname)}`;
+      navigation(redirectTo);
+    }
+  }, [token]);
   return (
     <DashboardLayout slots={{ toolbarActions: CustomActions }}>
       <Outlet />

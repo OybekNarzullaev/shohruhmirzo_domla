@@ -22,7 +22,7 @@ export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
       session: null,
-      loading: false,
+      loading: true,
       error: null,
       token: null,
 
@@ -35,6 +35,12 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "session-storage", // localStorage kaliti
+      // 🧠 faqat sessionni saqlamaymiz:
+      partialize: (state) => ({
+        token: state.token,
+        loading: state.loading,
+        error: state.error,
+      }),
     }
   )
 );

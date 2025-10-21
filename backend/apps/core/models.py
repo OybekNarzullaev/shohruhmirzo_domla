@@ -69,7 +69,7 @@ class AthleteParams(models.Model):
         verbose_name_plural = "Sportchilar parametrlari"
 
     def __str__(self):
-        return f"{self.athlete.fullname}"
+        return f"{self.athlete.name}"
 
 
 class SportType(models.Model):
@@ -218,7 +218,7 @@ class TrainingSession(models.Model):
         }
 
     def __str__(self):
-        return f"{self.athlete.fullname} - {self.sport_type.name} ({self.created_at.date()})"
+        return f"{self.athlete.name} - {self.sport_type.name} ({self.created_at.date()})"
 
     class Meta:
         verbose_name = "Mashg‘ulot"
