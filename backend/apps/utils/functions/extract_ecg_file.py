@@ -45,7 +45,7 @@ def extract_ecg_file(train_session: TrainingSession) -> None:
 
     # file_ECG ga yozish (ContentFile orqali)
     train_session.file_ECG.save(
-        f"${train_session.athlete.fullname}_ECG_${train_session.id}.txt",
+        f"${train_session.athlete.name}_ECG_${train_session.id}.txt",
         ContentFile(text_data),
         save=True
     )

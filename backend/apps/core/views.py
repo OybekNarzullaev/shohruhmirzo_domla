@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import (
     Athlete,
@@ -8,16 +9,42 @@ from .models import (
     TrainingSession,
     Exercise,
     Muscle,
+    AthleteLevel,
+    AthleteParams,
     MuscleFatigue
 )
 from .serializers import (
     AthleteSerializer,
+    AthleteLevelSerializer,
     SportTypeSerializer,
     TrainingSessionSerializer,
+    AthleteParamsSerializer,
     ExerciseSerializer
 )
 from apps.utils.functions.extract_ecg_file import extract_ecg_file
 from apps.utils.ai.calculate_fatigue import predict_fatigue
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    page_query_param = 'page'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        current_page = self.page.number
+        next_page = current_page + 1 if self.page.has_next() else None
+        prev_page = current_page - 1 if self.page.has_previous() else None
+
+        return Response({
+            "count": self.page.paginator.count,
+            "current_page": current_page,
+            "page_size": self.page.paginator.per_page,
+            "total_pages": self.page.paginator.num_pages,
+            "next_page": next_page,
+            "prev_page": prev_page,
+            "results": data,
+        })
 
 
 class SportTypeViewSet(viewsets.ModelViewSet):
@@ -27,18 +54,60 @@ class SportTypeViewSet(viewsets.ModelViewSet):
 
 
 class AthleteViewSet(viewsets.ModelViewSet):
-    queryset = Athlete.objects.all()
+    queryset = Athlete.objects.all().select_related("level")
     serializer_class = AthleteSerializer
+    pagination_class = CustomPagination
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class AthleteLevelViewSet(viewsets.ModelViewSet):
+    queryset = AthleteLevel.objects.all()
+    serializer_class = AthleteLevelSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+class AthleteParamsViewSet(viewsets.ModelViewSet):
+    queryset = AthleteParams.objects.all()
+    serializer_class = AthleteParamsSerializer
+    pagination_class = CustomPagination
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        if self.action == "list":  # faqat GET list uchun filterlash
+            athlete_id = self.request.query_params.get("athlete_id")
+            if athlete_id:
+                queryset = queryset.filter(athlete_id=athlete_id)
+        return queryset
 
 
 class TrainingSessionViewSet(viewsets.ModelViewSet):
     queryset = TrainingSession.objects.select_related(
         "athlete", "sport_type").all()
     serializer_class = TrainingSessionSerializer
+    pagination_class = CustomPagination
     permission_classes = [permissions.AllowAny]
 
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        if self.action == "list":  # faqat GET list uchun filterlash
+            athlete_id = self.request.query_params.get("athlete_id")
+            if athlete_id:
+                queryset = queryset.filter(athlete_id=athlete_id)
+        return queryset
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -74,6 +143,7 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
 class ExercisesViewSet(viewsets.ModelViewSet):
     queryset = Exercise.objects.select_related("training").all()
     serializer_class = ExerciseSerializer
+    pagination_class = CustomPagination
     permission_classes = [permissions.AllowAny]
 
     parser_classes = [MultiPartParser, FormParser, JSONParser]

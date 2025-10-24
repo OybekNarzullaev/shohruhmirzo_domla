@@ -3,11 +3,15 @@ from .views import (
     AthleteViewSet,
     SportTypeViewSet,
     TrainingSessionViewSet,
-    ExercisesViewSet
+    ExercisesViewSet,
+    AthleteLevelViewSet,
+    AthleteParamsViewSet,
 )
 
 router = DefaultRouter()
 router.register(r'athletes', AthleteViewSet)
+router.register(r'athlete-levels', AthleteLevelViewSet)
+router.register(r'athlete-params', AthleteParamsViewSet)
 router.register(r'sport-types', SportTypeViewSet)
 router.register(r'training-sessions', TrainingSessionViewSet)
 router.register(r'exercises', ExercisesViewSet)

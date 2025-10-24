@@ -1,4 +1,4 @@
-import { Athlete } from "./Athelete";
+import { Athlete } from "./Athlete";
 
 export interface SportType {
   id?: number;
@@ -17,10 +17,10 @@ export interface Muscle {
 }
 
 export interface TrainingSession {
-  id?: number;
+  id: number;
   title: string;
   athlete: Athlete | number;
-  sport_type: SportType | number;
+  sport_type: SportType & number;
   pre_heart_rate: number;
   post_heart_rate: number;
   exercise_count: number;

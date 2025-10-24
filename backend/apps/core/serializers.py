@@ -13,6 +13,16 @@ class AthleteParamsSerializer(serializers.ModelSerializer):
         model = AthleteParams
         fields = "__all__"
 
+    def create(self, validated_data):
+        weight = validated_data['weight']
+        height = validated_data['height']
+        height_m = height / 100  # metrga o‘tkazamiz
+
+        # BMI hisoblash: vazn / (bo‘y^2)
+        bmi = round(weight / (height_m ** 2), 2)
+        validated_data['bmi'] = bmi
+        return super().create(validated_data)
+
 
 class AthleteLevelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,9 +31,8 @@ class AthleteLevelSerializer(serializers.ModelSerializer):
 
 
 class AthleteSerializer(serializers.ModelSerializer):
-    fullname = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
     params = serializers.SerializerMethodField(read_only=True)
-    level = AthleteLevelSerializer(read_only=True)
 
     class Meta:
         model = Athlete

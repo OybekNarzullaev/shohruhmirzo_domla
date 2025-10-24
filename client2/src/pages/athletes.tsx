@@ -1,161 +1,207 @@
-"use client";
-
-import { Box, Typography } from "@mui/material";
-import { Crud, DataModel, DataSource } from "@toolpad/core/Crud";
+import { Crud, DataSource, DataSourceCache } from "@toolpad/core/Crud";
+import { useDemoRouter } from "@toolpad/core/internal";
+import { Athlete, AthleteLevel } from "../types/Athlete"; // Adjust path if needed
+import {
+  listAthletesAPI,
+  createAthleteAPI,
+  updateAthleteAPI,
+  deleteAthleteAPI,
+  listAthleteLevelsAPI,
+} from "../api/athletes"; // Adjust path based on your file structure (e.g., where the provided API code is saved)
+import { ImageUpload } from "../components/ImageUpload";
 import { useQuery } from "@tanstack/react-query";
-import { PageContainer } from "@toolpad/core/PageContainer";
-import { listAthletesAPI } from "../api/athletes";
-import { Athlete, AthleteLevel } from "../types/Athelete"; // ✅ Fayl nomi to‘g‘ri
+import {
+  Box,
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  MenuItem,
+  Select,
+} from "@mui/material";
 
-const Athletes = () => {
-  // Ma'lumotlarni API'dan olish
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["list-athletes"],
-    queryFn: listAthletesAPI,
-  });
+// Optional: If you have an API to fetch AthleteLevels, define it here.
+// For now, assuming levels are fetched separately or hardcoded for demo.
+// If levels are dynamic, add a getLevelsAPI and use in renderFormField.
 
-  // API javobida data.data bo‘lsa
-  const athletesStore: Athlete[] = data?.data;
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Typography>Yuklanmoqda...</Typography>
-      </PageContainer>
-    );
-  }
-
-  if (isError) {
-    return (
-      <PageContainer>
-        <Typography color="error">
-          Ma’lumotlarni yuklashda xatolik yuz berdi
-        </Typography>
-      </PageContainer>
-    );
-  }
-
-  const dataSource: DataSource<Athlete & DataModel> = {
-    fields: [
-      { field: "firstname", headerName: "Ism", type: "string" },
-      { field: "lastname", headerName: "Familiya", type: "string" },
-      { field: "patronymic", headerName: "Otasining ismi", type: "string" },
-      { field: "birth_year", headerName: "Tug‘ilgan yil", type: "string" },
-      { field: "sport_type", headerName: "Sport turi", type: "string" },
-      {
-        field: "level",
-        headerName: "Darajasi",
-        valueGetter: (v: AthleteLevel) => v.name,
-      },
-      {
-        field: "picture",
-        headerName: "Rasm (URL)",
-        renderCell: (v) => {
-          return <Box component={"img"} src={v.value} alt="salom" />;
-        },
-      },
-      {
-        field: "created_at",
-        headerName: "Yaratilgan sana",
-        valueGetter: (v) => new Date(v).toLocaleDateString(),
-      },
-      {
-        field: "updated_at",
-        headerName: "Yangilangan sana",
-        valueGetter: (v) => new Date(v).toLocaleDateString(),
-      },
-    ],
-
-    getMany: async ({ paginationModel, filterModel, sortModel }) => {
-      let athletes = [...athletesStore];
-
-      // Apply filters (demo only)
-      if (filterModel?.items?.length) {
-        filterModel.items.forEach(({ field, value, operator }) => {
-          if (!field || value == null) {
-            return;
-          }
-
-          athletes = athletes.filter((a: any) => {
-            const noteValue = a[field];
-
-            switch (operator) {
-              case "contains":
-                return String(noteValue)
-                  .toLowerCase()
-                  .includes(String(value).toLowerCase());
-              case "equals":
-                return noteValue === value;
-              case "startsWith":
-                return String(noteValue)
-                  .toLowerCase()
-                  .startsWith(String(value).toLowerCase());
-              case "endsWith":
-                return String(noteValue)
-                  .toLowerCase()
-                  .endsWith(String(value).toLowerCase());
-              case ">":
-                return (noteValue as number) > value;
-              case "<":
-                return (noteValue as number) < value;
-              default:
-                return true;
-            }
-          });
-        });
-      }
-
-      // Apply sorting
-      if (sortModel?.length) {
-        athletes.sort((a: any, b: any) => {
-          for (const { field, sort } of sortModel) {
-            if ((a[field] as number) < (b[field] as number)) {
-              return sort === "asc" ? -1 : 1;
-            }
-            if ((a[field] as number) > (b[field] as number)) {
-              return sort === "asc" ? 1 : -1;
-            }
-          }
-          return 0;
-        });
-      }
-
-      // Apply pagination
-      const start = paginationModel.page * paginationModel.pageSize;
-      const end = start + paginationModel.pageSize;
-      const paginatedAthletes = athletes.slice(start, end);
-
-      return {
-        items: paginatedAthletes,
-        itemCount: athletes.length,
-      };
+const athletesDataSource: DataSource<Athlete> = {
+  fields: [
+    { field: "id", headerName: "ID", type: "number", editable: false },
+    {
+      field: "firstname",
+      headerName: "First Name",
+      type: "string",
+      width: 150,
     },
-  };
+    { field: "lastname", headerName: "Last Name", type: "string", width: 150 },
+    {
+      field: "patronymic",
+      headerName: "Patronymic",
+      type: "string",
+      width: 150,
+    },
+    {
+      field: "level",
+      headerName: "Level",
+      width: 150,
+      valueGetter: (v: AthleteLevel) => v.name,
+      renderFormField: ({ value, onChange, error }) => {
+        const { isLoading, data } = useQuery({
+          queryKey: ["athlete-levels"],
+          queryFn: listAthleteLevelsAPI,
+          staleTime: Infinity,
+        });
+
+        return (
+          <FormControl fullWidth>
+            <InputLabel id="athlete-level-select-label">Daraja</InputLabel>
+            <Select
+              labelId="athlete-level-select-label"
+              id="athlete-level-select"
+              value={value}
+              disabled={isLoading}
+              error={!!error}
+              label="Age"
+              onChange={onChange as any}
+            >
+              {data?.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.name}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText>{error ?? " "}</FormHelperText>
+          </FormControl>
+        );
+      },
+    },
+    { field: "birth_year", headerName: "Birth Year", type: "number" }, // Could be 'date' if formatted properly
+    {
+      field: "picture",
+      headerName: "Picture",
+      renderCell: (cell) => (
+        <Box height={50} component={"img"} src={cell.value}></Box>
+      ),
+      renderFormField: ({ value, onChange, error }) => (
+        <ImageUpload
+          value={value as File}
+          onChange={onChange as any}
+          error={error}
+        />
+      ),
+    }, // Could add image preview if needed
+
+    {
+      field: "created_at",
+      width: 150,
+      headerName: "Created At",
+      // type: "dateTime",
+      editable: false,
+    },
+    {
+      field: "updated_at",
+      width: 150,
+      headerName: "Updated At",
+      // type: "dateTime",
+      editable: false,
+    },
+  ],
+  getMany: async ({ paginationModel }) => {
+    const athletes = await listAthletesAPI();
+    const { page = athletes.current_page, pageSize = athletes.page_size } =
+      paginationModel || {};
+    const start = page * pageSize;
+    const paginatedAthletes = athletes.results.slice(start, start + pageSize);
+    return {
+      items: paginatedAthletes,
+      itemCount: athletes.count, // For server-side pagination, fetch count from API if available
+    };
+  },
+  getOne: async (id) => {
+    // Note: Your API doesn't have a getOne, so we'll fetch all and find. In production, add a getOne API.
+    const athletes = await listAthletesAPI();
+    return athletes.results.find((athlete) => athlete.id === id) as Athlete;
+  },
+  createOne: async (data) => {
+    const newAthlete = await createAthleteAPI(data);
+    return newAthlete;
+  },
+  updateOne: async (id, data) => {
+    const updatedAthlete = await updateAthleteAPI(id as number, data);
+    return updatedAthlete;
+  },
+  deleteOne: async (id) => {
+    await deleteAthleteAPI(id as number);
+  },
+  validate: (values) => {
+    const issues = [];
+    if (!values.firstname)
+      issues.push({ message: "First name required", path: ["firstname"] });
+    if (!values.lastname)
+      issues.push({ message: "Last name required", path: ["lastname"] });
+
+    if (!values.level)
+      issues.push({ message: "Level required", path: ["level"] });
+    if (!values.patronymic)
+      issues.push({ message: "Patronymic required", path: ["patronymic"] });
+    if (!values.birth_year)
+      issues.push({ message: "Birth year required", path: ["birth_year"] });
+
+    if (!values.picture)
+      issues.push({ message: "Rasm kerak", path: ["picture"] });
+
+    // Add more validations as needed, e.g., for picture URL format
+    return { issues };
+  },
+};
+
+// Optional cache for performance
+const athletesCache = new DataSourceCache();
+
+function AthleteCrudPage() {
+  const router = useDemoRouter("/athletes");
+
+  // Remove this const when copying and pasting into your project.
+
+  const showAthleteId = matchPath("/athletes/:athleteId", router.pathname);
+  const editAthleteId = matchPath("/athletes/:athleteId/edit", router.pathname);
 
   return (
-    <Crud<Athlete & DataModel>
-      rootPath="/athletes"
-      dataSource={dataSource}
-      dataSourceCache={null}
+    <Crud<Athlete>
+      dataSource={athletesDataSource}
+      dataSourceCache={athletesCache}
+      rootPath="/athletes" // Adjust based on your routing, e.g., in Next.js App Router
       initialPageSize={10}
       defaultValues={{
         firstname: "",
         lastname: "",
-        patronymic: "",
         name: "",
-        level: 1,
+        level: 1 as any, // Default level ID
+        patronymic: "",
         birth_year: "",
-        sport_type: "",
         picture: "",
+        sport_type: "",
       }}
       pageTitles={{
-        list: "Sportchilar ro‘yxati",
-        create: "Yangi sportchi qo‘shish",
-        edit: "Sportchini tahrirlash",
-        show: "Sportchi ma’lumotlari",
+        list: "Sportchilar ro'yhati",
+        create: "Sportchi yaratish",
+        edit: `Sportchi ${editAthleteId} - Tahrirlash`,
+        show: `Sportchi ${showAthleteId}`,
+      }}
+      slotProps={{
+        list: {
+          dataGrid: {
+            initialState: { pinnedColumns: { right: ["actions"] } },
+          },
+        },
       }}
     />
   );
-};
+}
 
-export default Athletes;
+function matchPath(pattern: string, pathname: string): string | null {
+  const regex = new RegExp(`^${pattern.replace(/:[^/]+/g, "([^/]+)")}$`);
+  const match = pathname.match(regex);
+  return match ? match[1] : null;
+}
+
+export default AthleteCrudPage;

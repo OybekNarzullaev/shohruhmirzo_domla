@@ -4,11 +4,17 @@ import { Outlet } from "react-router";
 import { ReactRouterAppProvider } from "@toolpad/core/react-router";
 import type { Navigation, Authentication } from "@toolpad/core/AppProvider";
 import { useSessionStore } from "./store/auth";
-import { logoutAPI } from "./api/auth";
-import { useTheme, useMediaQuery } from "@mui/material";
-import { NotificationsProvider } from "@toolpad/core/useNotifications";
+import { getProfileAPI, logoutAPI } from "./api/auth";
+import { useTheme, useMediaQuery, Box } from "@mui/material";
+import {
+  NotificationsProvider,
+  useNotifications,
+} from "@toolpad/core/useNotifications";
 import { Backdrop, CircularProgress } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useNetworkStore } from "./store/network";
+import { NetworkStatus } from "./components/NetworkStatus";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -27,14 +33,16 @@ const NAVIGATION: Navigation = [
     segment: "athletes",
     title: "Sportchilar",
     icon: <PersonIcon />,
-    pattern: "athletes{/:id}*",
+    pattern: "athletes{/:athleteId}*",
   },
 ];
 
 export default function App() {
   const theme = useTheme();
+  const notifications = useNotifications();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-  const { session, setLoading, clearSession, loading } = useSessionStore();
+  const { session, setLoading, clearSession, setSession, loading } =
+    useSessionStore();
 
   const AUTHENTICATION: Authentication = {
     signIn: () => {},
@@ -48,6 +56,31 @@ export default function App() {
       }
     },
   };
+
+  useEffect(() => {
+    if (!session) {
+      getProfileAPI().then((res) =>
+        setSession({
+          user: res.data,
+        })
+      );
+    }
+
+    window.addEventListener("online", () => {
+      useNetworkStore.getState().setOnline(true);
+      notifications.show("Yana onlinedasiz!", {
+        autoHideDuration: 3000,
+        severity: "success",
+      });
+    });
+    window.addEventListener("offline", () => {
+      useNetworkStore.getState().setOnline(false);
+      notifications.show("Siz offlinedasiz!", {
+        autoHideDuration: 3000,
+        severity: "error",
+      });
+    });
+  }, []);
 
   return (
     <ReactRouterAppProvider
@@ -66,6 +99,7 @@ export default function App() {
       >
         <CircularProgress color="inherit" />
       </Backdrop>
+      <NetworkStatus />
       <NotificationsProvider>
         <QueryClientProvider client={queryClient}>
           <Outlet />

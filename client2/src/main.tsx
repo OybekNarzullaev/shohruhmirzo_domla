@@ -6,6 +6,7 @@ import Layout from "./layouts/dashboard";
 import DashboardPage from "./pages";
 import SignInPage from "./pages/signin";
 import AthletesPage from "./pages/athletes";
+import { ViewAthletePage } from "./pages/view-athlete";
 
 const router = createBrowserRouter([
   {
@@ -20,7 +21,19 @@ const router = createBrowserRouter([
             Component: DashboardPage,
           },
           {
+            path: "athletes/:id",
+            Component: ViewAthletePage,
+          },
+          {
             path: "athletes",
+            Component: AthletesPage,
+          },
+          {
+            path: "athletes/new",
+            Component: AthletesPage,
+          },
+          {
+            path: "athletes/:athleteId/edit",
             Component: AthletesPage,
           },
         ],
