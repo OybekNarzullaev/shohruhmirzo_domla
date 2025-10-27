@@ -6,6 +6,7 @@ from .views import (
     ExercisesViewSet,
     AthleteLevelViewSet,
     AthleteParamsViewSet,
+    MuscleViewSet
 )
 
 router = DefaultRouter()
@@ -15,5 +16,6 @@ router.register(r'athlete-params', AthleteParamsViewSet)
 router.register(r'sport-types', SportTypeViewSet)
 router.register(r'training-sessions', TrainingSessionViewSet)
 router.register(r'exercises', ExercisesViewSet)
+router.register(r'muscles', MuscleViewSet)
 
 urlpatterns = router.urls

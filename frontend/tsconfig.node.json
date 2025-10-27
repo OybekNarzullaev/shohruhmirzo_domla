@@ -27,5 +27,5 @@
       "@mui/material/*": ["node_modules/@mui/material/*"]
     }
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.mts"]
 }

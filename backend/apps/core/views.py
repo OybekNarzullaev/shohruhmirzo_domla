@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -19,7 +20,9 @@ from .serializers import (
     SportTypeSerializer,
     TrainingSessionSerializer,
     AthleteParamsSerializer,
-    ExerciseSerializer
+    ExerciseSerializer,
+    MuscleFatigueSerializer,
+    MuscleSerializer
 )
 from apps.utils.functions.extract_ecg_file import extract_ecg_file
 from apps.utils.ai.calculate_fatigue import predict_fatigue
@@ -70,11 +73,50 @@ class AthleteViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=["get"])
+    def k_load_graph(self, request, pk=None):
+        instance: Athlete = self.get_object()
+        muscle_shortname = request.query_params.get('muscle')
+        data = instance.calculate_k_adapt_load(muscle_shortname)
+
+        return Response(
+            {
+                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
+                "rows_count": len(data.get('k_adapt_load')),
+                "columns": ['k_adapt_load'],
+                "signals": data,  # har bir kanal uchun massiv
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class AthleteLevelViewSet(viewsets.ModelViewSet):
     queryset = AthleteLevel.objects.all()
     serializer_class = AthleteLevelSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+class MuscleViewSet(viewsets.ModelViewSet):
+    queryset = Muscle.objects.all()
+    serializer_class = MuscleSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        if self.action == "list":  # faqat GET list uchun filterlash
+            training_id = self.request.query_params.get("training_id")
+            athlete_id = self.request.query_params.get("athlete_id")
+            if training_id:
+                muscle_ids = MuscleFatigue.objects.filter(exercise__training__id=training_id).values_list(
+                    'muscle_id', flat=True
+                )
+                queryset = queryset.filter(id__in=muscle_ids)
+            if athlete_id:
+                muscle_ids = MuscleFatigue.objects.filter(exercise__training__athlete__id=athlete_id).values_list(
+                    'muscle_id', flat=True
+                )
+                queryset = queryset.filter(id__in=muscle_ids)
+        return queryset
 
 
 class AthleteParamsViewSet(viewsets.ModelViewSet):
@@ -138,6 +180,60 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers,
         )
+    # 🔹 Qo‘shimcha metod: GET /api/training-sessions/<id>/emt-data/
+
+    @action(detail=True, methods=["get"])
+    def emtData(self, request, pk=None):
+        """
+        Har bir ustunni (signal kanalini) alohida massiv sifatida yuboradi.
+        Plotly uchun qulay format.
+        """
+        instance = self.get_object()
+        df = instance.emt_muscles_to_df().dropna(how="all")
+        # 🔹 Bo‘sh nomli ustunlarni olib tashlash
+        if "" in df.columns:
+            df = df.drop(columns=[""])
+        # None/NaN yo‘qotish
+        df = df.fillna(0)
+
+        # Har bir ustunni alohida massivga ajratamiz
+        data = {col: df[col].tolist() for col in df.columns}
+
+        return Response(
+            {
+                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
+                "rows_count": len(df),
+                "columns": list(df.columns),
+                "signals": data,  # har bir kanal uchun massiv
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get"])
+    def muscleFatigueGraph(self, request, pk=None):
+        """
+        Har bir ustunni (signal kanalini) alohida massiv sifatida yuboradi.
+        Plotly uchun qulay format.
+        """
+        muscle = request.query_params.get('muscle')
+        instance = self.get_object()
+        exercises = Exercise.objects.filter(
+            training=instance).order_by('first_count')
+
+        fatigues = MuscleFatigue.objects.filter(
+            exercise__id__in=[ex.id for ex in exercises],
+            muscle__shortname=muscle
+        ).order_by('exercise__first_count').values_list('fatigue', flat=True)
+
+        return Response(
+            {
+                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
+                "rows_count": len(fatigues),
+                "columns": ['fatigues'],
+                "signals": fatigues,  # har bir kanal uchun massiv
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ExercisesViewSet(viewsets.ModelViewSet):
@@ -147,6 +243,14 @@ class ExercisesViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        if self.action == "list":  # faqat GET list uchun filterlash
+            training_id = self.request.query_params.get("training_id")
+            if training_id:
+                queryset = queryset.filter(training_id=training_id)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """

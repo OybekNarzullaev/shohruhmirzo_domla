@@ -82,6 +82,9 @@ class ExerciseSerializer(serializers.ModelSerializer):
             "first_count",
             "last_count",
             'hrate',
+            "description",
+            "signal_length",
+            "created_at",
             "training",
             "muscles",
         ]
