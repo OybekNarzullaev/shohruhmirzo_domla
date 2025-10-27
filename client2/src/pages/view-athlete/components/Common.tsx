@@ -17,13 +17,14 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { getAthleteAPI } from "../../../api/athletes";
 import { useState } from "react";
+import { formatDataTimeISO } from "../../../utils/funtions";
 
 export const Common = () => {
   const id = useParams().id as string;
   const [isExpanded, setIsExpanded] = useState(true);
 
   //   asosisy
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: [id, "get-one-athlete"],
     queryFn: () => getAthleteAPI(id),
   });
@@ -73,7 +74,7 @@ export const Common = () => {
               </TableRow>
               <TableRow>
                 <TableCell>Ro'yhatga olingan vaqti</TableCell>
-                <TableCell>{data?.created_at}</TableCell>
+                <TableCell>{formatDataTimeISO(data?.created_at)}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Oxirgi tahrir vaqti</TableCell>

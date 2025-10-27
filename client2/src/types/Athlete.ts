@@ -1,4 +1,4 @@
-import { DataModel } from "@toolpad/core/Crud";
+import type { DataModel } from "@toolpad/core/Crud";
 
 export interface AthleteLevel {
   id?: number;

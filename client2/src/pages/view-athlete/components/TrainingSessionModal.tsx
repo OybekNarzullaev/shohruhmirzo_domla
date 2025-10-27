@@ -12,7 +12,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
-import { TrainingSession } from "../../../types/Core";
+import type { TrainingSession } from "../../../types/Core";
 import { useQuery } from "@tanstack/react-query";
 import { listSportTypesAPI } from "../../../api/sport-types";
 import { FileUpload } from "../../../components/FileUpload";
@@ -54,7 +54,7 @@ export const TrainingSessionModal: React.FC<Props> = ({
     },
   });
 
-  const { data: sportTypes, isLoading: isLoadingSportTypes } = useQuery({
+  const { data: sportTypes } = useQuery({
     queryKey: ["sport_types"],
     queryFn: listSportTypesAPI,
     staleTime: Infinity,

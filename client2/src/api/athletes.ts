@@ -1,11 +1,23 @@
 import api from "../config/api";
-import { Athlete, AthleteLevel, AthleteParams } from "../types/Athlete";
-import { Pagination } from "../types/Pagination";
+import type { Athlete, AthleteLevel, AthleteParams } from "../types/Athlete";
+import type { Pagination } from "../types/Pagination";
 
 const BASE_URL = "/athletes/";
 
 export const getAthleteAPI = async (id: number | string): Promise<Athlete> => {
   const { data } = await api.get(`${BASE_URL}${id}/`);
+  return data;
+};
+
+export const kLoadGraphAPI = async (
+  id: number | string,
+  muscle: string
+): Promise<Athlete> => {
+  const { data } = await api.get(`${BASE_URL}${id}/k_load_graph/`, {
+    params: {
+      muscle,
+    },
+  });
   return data;
 };
 export const listAthletesAPI = async (): Promise<Pagination<Athlete>> => {

@@ -28,9 +28,10 @@ import {
   listTrainingSesssionsAPI,
 } from "../../../api/training";
 import { useState } from "react";
-import { TrainingSession } from "../../../types/Core";
+import { type TrainingSession } from "../../../types/Core";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { TrainingSessionModal } from "./TrainingSessionModal";
+import { formatDataTimeISO } from "../../../utils/funtions";
 
 export const Trainings = () => {
   const id = useParams().id as string;
@@ -41,7 +42,7 @@ export const Trainings = () => {
   const notifications = useNotifications();
   const [isOpenAddModal, setIsOpenAddModal] = useState(false);
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isFetching, refetch } = useQuery({
     queryKey: [id, "get-athlete-trainings"],
     queryFn: () => listTrainingSesssionsAPI(id),
   });
@@ -126,7 +127,12 @@ export const Trainings = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Stack p={1} direction={"row"} justifyContent={"end"}>
-            <Button variant="contained" onClick={() => setIsOpenAddModal(true)}>
+            <Button
+              variant="contained"
+              disabled={isPending}
+              loading={isPending}
+              onClick={() => setIsOpenAddModal(true)}
+            >
               Qo'shish
             </Button>
           </Stack>
@@ -175,13 +181,15 @@ export const Trainings = () => {
                     </TableCell>
 
                     <TableCell>{p.description}</TableCell>
-                    <TableCell>{p.created_at}</TableCell>
+                    <TableCell>{formatDataTimeISO(p.created_at)}</TableCell>
 
                     <TableCell>
                       <Stack spacing={1} direction={"row"} component={"span"}>
-                        <IconButton>
-                          <VisibilityIcon color="primary" />
-                        </IconButton>
+                        <Link to={`trainings/${p.id}`}>
+                          <IconButton>
+                            <VisibilityIcon color="primary" />
+                          </IconButton>
+                        </Link>
                         <IconButton
                           color="warning"
                           onClick={() => {

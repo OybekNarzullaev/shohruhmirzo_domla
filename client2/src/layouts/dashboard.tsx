@@ -44,8 +44,7 @@ function CustomActions() {
 }
 
 export default function Layout() {
-  const { session, setSession, setLoading, token, clearSession } =
-    useSessionStore();
+  const { session, token } = useSessionStore();
   const location = useLocation();
   const navigation = useNavigate();
 

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Profile } from "../types/Profile";
+import type { Profile } from "../types/Profile";
 
 export interface Session {
   user: Profile;

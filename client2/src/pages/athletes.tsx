@@ -1,6 +1,7 @@
-import { Crud, DataSource, DataSourceCache } from "@toolpad/core/Crud";
+import { Crud, type DataSource, DataSourceCache } from "@toolpad/core/Crud";
 import { useDemoRouter } from "@toolpad/core/internal";
-import { Athlete, AthleteLevel } from "../types/Athlete"; // Adjust path if needed
+import type { Athlete, AthleteLevel } from "../types/Athlete"; // Adjust path if needed
+// Adjust path if needed
 import {
   listAthletesAPI,
   createAthleteAPI,
@@ -18,6 +19,7 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
+import { formatDataTimeISO } from "../utils/funtions";
 
 // Optional: If you have an API to fetch AthleteLevels, define it here.
 // For now, assuming levels are fetched separately or hardcoded for demo.
@@ -96,11 +98,13 @@ const athletesDataSource: DataSource<Athlete> = {
       headerName: "Created At",
       // type: "dateTime",
       editable: false,
+      renderCell: (cell) => formatDataTimeISO(cell.value),
     },
     {
       field: "updated_at",
       width: 150,
       headerName: "Updated At",
+      renderCell: (cell) => formatDataTimeISO(cell.value),
       // type: "dateTime",
       editable: false,
     },

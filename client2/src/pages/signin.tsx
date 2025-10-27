@@ -2,7 +2,7 @@
 import { SignInPage } from "@toolpad/core/SignInPage";
 import { Navigate, useNavigate } from "react-router";
 import { getProfileAPI, loginAPI } from "../api/auth";
-import { Session, useSessionStore } from "../store/auth";
+import { type Session, useSessionStore } from "../store/auth";
 import {
   Button,
   FormControl,

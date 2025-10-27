@@ -8,16 +8,13 @@ import invariant from "invariant";
 import { Params } from "./components/Params";
 import { Trainings } from "./components/Trainings";
 import { Common } from "./components/Common";
+import { KLoadGraph } from "./components/KLoadGraph";
 
 const ViewAthletePage = () => {
   const id = useParams().id as string;
 
   //   asosisy
-  const {
-    data: athlete,
-    isLoading: isLoadingAthlete,
-    isFetching: isFetchingAthlete,
-  } = useQuery({
+  const { data: athlete } = useQuery({
     queryKey: [id, "get-one-athlete"],
     queryFn: () => getAthleteAPI(id),
   });
@@ -34,6 +31,7 @@ const ViewAthletePage = () => {
       <Common />
       <Params />
       <Trainings />
+      <KLoadGraph />
     </PageContainer>
   );
 };

@@ -28,8 +28,9 @@ import {
 } from "../../../api/athletes";
 import { useState } from "react";
 import { AthleteParamsModal } from "./AthleteParamsModal";
-import { AthleteParams } from "../../../types/Athlete";
+import type { AthleteParams } from "../../../types/Athlete";
 import { useNotifications } from "@toolpad/core/useNotifications";
+import { formatDataTimeISO } from "../../../utils/funtions";
 
 export const Params = () => {
   const id = useParams().id as string;
@@ -41,7 +42,6 @@ export const Params = () => {
   const [isOpenAddModal, setIsOpenAddModal] = useState(false);
   const {
     data: params,
-    isLoading: isLoadingParams,
     isFetching: isFetchingParams,
     refetch,
   } = useQuery({
@@ -171,7 +171,7 @@ export const Params = () => {
                     <TableCell>{p.weight}</TableCell>
                     <TableCell>{p.height}</TableCell>
                     <TableCell>{p.bmi}</TableCell>
-                    <TableCell>{p.created_at}</TableCell>
+                    <TableCell>{formatDataTimeISO(p.created_at)}</TableCell>
                     <TableCell>{p.description}</TableCell>
                     <TableCell>
                       <IconButton

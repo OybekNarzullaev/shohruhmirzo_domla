@@ -1,4 +1,4 @@
-import { Athlete } from "./Athlete";
+import type { Athlete } from "./Athlete";
 
 export interface SportType {
   id?: number;
@@ -36,17 +36,18 @@ export interface Exercise {
   id?: number;
   first_count: number;
   last_count: number;
-  training: TrainingSession | number;
+  training: TrainingSession & number;
   signal_length: number;
   hrate: number;
   description: string;
+  muscles?: MuscleFatigue[];
   created_at: string;
   updated_at: string;
 }
 
 export interface MuscleFatigue {
   id?: number;
-  exercise: Exercise | number;
-  muscle: Muscle | number;
+  exercise: Exercise & number;
+  muscle: Muscle & number;
   fatigue: number;
 }

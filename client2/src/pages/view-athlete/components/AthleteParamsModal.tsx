@@ -9,10 +9,9 @@ import {
   Button,
   Stack,
   TextField,
-  MenuItem,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
-import { AthleteParams } from "../../../types/Athlete";
+import type { AthleteParams } from "../../../types/Athlete";
 
 interface Props {
   open: boolean;
