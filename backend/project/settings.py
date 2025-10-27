@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'apps.core',
     'apps.users',
     'apps.stats',
+    'apps.client',
 ]
 
 REST_FRAMEWORK = {
@@ -65,7 +66,9 @@ ROOT_URLCONF = 'project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'apps', 'client', 'dist'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -106,6 +109,10 @@ USE_TZ = True
 
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'apps', 'client', 'dist'),
+]
+
 STATIC_ROOT = BASE_DIR / 'static_files'
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'

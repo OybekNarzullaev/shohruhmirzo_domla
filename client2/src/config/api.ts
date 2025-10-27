@@ -40,7 +40,10 @@ const setupInterceptors = (api: AxiosInstance) => {
 };
 
 const api: AxiosInstance = axios.create({
-  baseURL: `${(import.meta as any).env.VITE_API_URL}/api/`,
+  baseURL:
+    import.meta.env.MODE === "production"
+      ? undefined
+      : "http://localhost:8000/api/",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
