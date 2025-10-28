@@ -18,13 +18,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Fayl nomlarini tartib bilan yozadi
-        entryFileNames: "js/[name].[hash].js",
-        chunkFileNames: "css/[name].[hash].js",
-        assetFileNames: "media/[name].[hash].[ext]",
+        entryFileNames: "static/js/[name].[hash].js",
+        chunkFileNames: "static/css/[name].[hash].js",
+        assetFileNames: "static/media/[name].[hash].[ext]",
       },
     },
   },
 
   // 🔹 Static fayllar uchun baza (agar Django static URL bilan ishlasa)
-  base: "/static/",
+  // base: "/static/",
 });
