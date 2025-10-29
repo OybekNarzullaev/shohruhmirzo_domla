@@ -56,9 +56,11 @@ MIDDLEWARE = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    'https://sport-ai.uz',
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    'https://sport-ai.uz',
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -111,6 +113,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'apps', 'client', 'dist', 'static'),
+    os.path.join(BASE_DIR, 'apps', 'client', 'dist'),
 ]
 
 STATIC_ROOT = BASE_DIR / 'static_files'

@@ -50,7 +50,6 @@ export default function App() {
       setLoading(true);
       try {
         await logoutAPI();
-      } catch (error) {
       } finally {
         clearSession();
       }
@@ -86,9 +85,7 @@ export default function App() {
     <ReactRouterAppProvider
       navigation={NAVIGATION}
       branding={{
-        title: isMdUp
-          ? "Sportchilarning biosignallarini tahlil qilish tizimi"
-          : "",
+        title: isMdUp ? "Sport AI" : "",
       }}
       session={session as any}
       authentication={AUTHENTICATION}

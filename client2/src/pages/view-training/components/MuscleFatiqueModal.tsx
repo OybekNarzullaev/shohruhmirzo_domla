@@ -58,7 +58,7 @@ export const MuscleFatiqueModal: React.FC<Props> = ({
 
   const layout: Partial<Layout> = {
     title: { text: selectedMuscle?.title ?? "Grafik" },
-    xaxis: { title: { text: "Ketma-ketlik" } },
+    xaxis: { title: { text: "Mashqlar ketma-ketligi" } },
     yaxis: { title: { text: "Charchoq qiymati" } },
     autosize: true,
     height: 500,

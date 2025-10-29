@@ -10,7 +10,6 @@ urlpatterns = [
     path('api/users/', include('apps.users.urls')),
     path('api/auth/', include('apps.users.auth.urls')),
     path('api/stats/', include('apps.stats.urls')),
-    path('', include('apps.client.urls'))
 ]
 
 # 🔹 Media fayllarni local rejimda ko‘rsatish
@@ -24,5 +23,18 @@ else:
                 {'document_root': settings.MEDIA_ROOT}),
     ]
 
+
 # 🔹 Static fayllar
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+
+# 🔹 Oxirida React frontend
+urlpatterns += [
+    re_path(r'^sw\.js$', serve, {'path': 'sw.js',
+            'document_root': settings.STATIC_ROOT}
+            ),
+    re_path(r'^manifest.webmanifest$', serve, {'path': 'manifest.webmanifest',
+                                               'document_root': settings.STATIC_ROOT}
+            ),
+    re_path(r'^', include('apps.client.urls')),
+]

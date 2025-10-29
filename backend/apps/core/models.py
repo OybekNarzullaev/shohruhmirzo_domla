@@ -32,39 +32,6 @@ class Athlete(models.Model):
     def __str__(self):
         return f"{self.name} {self.lastname}"
 
-    def calculate_k_adapt_load(self, muscle_shortname, time_from=None, time_to=None):
-
-        muscle_fatigues = MuscleFatigue.objects.filter(
-            muscle__shortname=muscle_shortname,
-            exercise__training__athlete=self
-        ).order_by('exercise__training__id')
-
-        times = muscle_fatigues.values_list(
-            'exercise__signal_length', flat=True
-        )
-        datetimes = muscle_fatigues.values_list(
-            'exercise__created_at', flat=True
-        )
-        fatigues = muscle_fatigues.values_list('fatigue', flat=True)
-        # o‘rtacha qiymatlar
-        v_time = np.array(times, dtype=int)
-        v_fatigue = np.array(fatigues, dtype=float)
-
-        t_mean = np.mean(v_time)
-        f_mean = np.mean(v_fatigue)
-
-        # T va F hisoblash
-        T = v_time / t_mean
-        F = v_fatigue / f_mean
-
-        # K ni hisoblash
-        k = np.sqrt(np.abs(T * (1 - F)))
-
-        return {
-            'k_adapt_load': k.tolist(),
-            'datetimes': datetimes
-        }
-
     class Meta:
         verbose_name = "Sportchi"
         verbose_name_plural = "Sportchilar"
@@ -222,6 +189,44 @@ class TrainingSession(models.Model):
         columns_to_drop = ['Data']
 
         return pd.DataFrame(data=rows, columns=columns_to_drop)
+
+    def calculate_k_adapt_load(self, muscle_shortname, time_from=None, time_to=None):
+
+        muscle_fatigues = MuscleFatigue.objects.filter(
+            muscle__shortname=muscle_shortname,
+            exercise__training=self
+        ).order_by('exercise__training__id')
+
+        if muscle_fatigues.count() == 0:
+            return {
+                'k_adapt_load': 0,
+                'name': self.title,
+                'created_at': self.created_at
+            }
+        times = muscle_fatigues.values_list(
+            'exercise__signal_length', flat=True
+        )
+
+        fatigues = muscle_fatigues.values_list('fatigue', flat=True)
+        # o‘rtacha qiymatlar
+        v_time = np.array(times, dtype=int)
+        v_fatigue = np.array(fatigues, dtype=float)
+        print(v_time, times)
+        t_max = np.max(v_time)
+        t_norm = v_time / t_max
+
+        # 3. Umumiy yuklama
+        L_total = np.sum(v_fatigue * t_norm)
+        dHR = self.post_heart_rate - self.pre_heart_rate
+
+        # 5. S koeffitsienti
+        K = L_total / dHR
+
+        return {
+            'k_adapt_load': K.tolist(),
+            'name': self.title,
+            'created_at': self.created_at
+        }
 
     def __str__(self):
         return f"{self.athlete.name} - {self.sport_type.name} ({self.created_at.date()})"

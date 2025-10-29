@@ -58,7 +58,7 @@ export const KLoadGraph = () => {
   const { signals = {}, columns = [] } = data as any;
 
   const traces = columns.map((col: any) => ({
-    x: signals["datetimes"],
+    x: signals["titles"],
     y: signals[col],
     type: "scatter",
     mode: "lines+markers",

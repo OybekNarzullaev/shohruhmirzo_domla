@@ -107,8 +107,10 @@ class ExerciseAdmin(admin.ModelAdmin):
 class MuscleFatigueAdmin(admin.ModelAdmin):
     list_display = (
         "exercise",
+        "exercise__signal_length",
         "muscle",
         "fatigue",
+
     )
     search_fields = (
         "muscle__title",

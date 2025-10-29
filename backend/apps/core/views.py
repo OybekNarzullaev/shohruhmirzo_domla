@@ -29,7 +29,7 @@ from apps.utils.ai.calculate_fatigue import predict_fatigue
 
 
 class CustomPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 50
     page_size_query_param = "page_size"
     page_query_param = 'page'
     max_page_size = 100
@@ -77,12 +77,22 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def k_load_graph(self, request, pk=None):
         instance: Athlete = self.get_object()
         muscle_shortname = request.query_params.get('muscle')
-        data = instance.calculate_k_adapt_load(muscle_shortname)
+        trainings = TrainingSession.objects.filter(athlete=instance)
+        data = {
+            'k_adapt_load': [],
+            'datetimes': [],
+            'titles': [],
+        }
+        for t in trainings:
+            d = t.calculate_k_adapt_load(muscle_shortname)
+            data['k_adapt_load'].append(d['k_adapt_load'])
+            data['datetimes'].append(d['created_at'])
+            data['titles'].append(d['name'])
 
         return Response(
             {
                 "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
-                "rows_count": len(data.get('k_adapt_load')),
+                "rows_count": trainings.count(),
                 "columns": ['k_adapt_load'],
                 "signals": data,  # har bir kanal uchun massiv
             },

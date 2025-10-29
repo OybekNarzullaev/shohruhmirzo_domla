@@ -9,6 +9,18 @@ import AthletesPage from "./pages/athletes";
 import { ViewAthletePage } from "./pages/view-athlete";
 import { ViewTrainingPage } from "./pages/view-training";
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/sw.js", { scope: "/" })
+    .then((registration) => {
+      console.log("Service Worker registered with scope:", registration.scope);
+      // Optional: Add update logic
+      registration.update();
+    })
+    .catch((error) => {
+      console.error("Service Worker registration failed:", error);
+    });
+}
 const router = createBrowserRouter([
   {
     Component: App,
