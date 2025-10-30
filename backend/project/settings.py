@@ -2,16 +2,19 @@
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv  # 🔹 qo‘shildi
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# .env faylni yuklaymiz
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = os.getenv("DEBUG") == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(
     ',') if os.getenv('ALLOWED_HOSTS') else ['localhost']
 
