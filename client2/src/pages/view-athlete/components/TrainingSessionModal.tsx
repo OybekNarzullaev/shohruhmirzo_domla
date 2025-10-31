@@ -152,7 +152,7 @@ export const TrainingSessionModal: React.FC<Props> = ({
                 name="post_heart_rate"
                 control={control}
                 rules={{
-                  required: "Dastlabki yurak urishini kiriting",
+                  required: "Oxirgi yurak urishini kiriting",
                 }}
                 render={({ field }) => (
                   <TextField

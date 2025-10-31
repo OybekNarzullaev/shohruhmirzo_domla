@@ -11,7 +11,6 @@ import {
   InputLabel,
   OutlinedInput,
   Stack,
-  Box,
   TextField,
   Typography,
 } from "@mui/material";
@@ -112,7 +111,6 @@ function Title() {
       alignItems={"center"}
       width={"100%"}
     >
-      <Box component={"img"} sx={{ width: 160 }} src="/static/media/logo.png" />
       <Typography
         variant="body1"
         color="primary.main"

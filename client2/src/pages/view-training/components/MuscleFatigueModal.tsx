@@ -63,11 +63,12 @@ export const MuscleFatigueModal = ({
 
   // === 3. Grafik ma'lumotlari ===
   const { signals = {}, columns = [], rows_count = 0 } = graphData as any;
+
   const x = Array.from({ length: rows_count }, (_, i) => i + 1); // 1 dan boshlash
 
   const traces: Data[] = columns.map((col: string) => ({
     x,
-    y: signals[col] || [],
+    y: signals || [],
     type: "scatter",
     mode: "lines+markers",
     name: col,

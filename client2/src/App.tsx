@@ -5,7 +5,7 @@ import { ReactRouterAppProvider } from "@toolpad/core/react-router";
 import type { Navigation, Authentication } from "@toolpad/core/AppProvider";
 import { useSessionStore } from "./store/auth";
 import { getProfileAPI, logoutAPI } from "./api/auth";
-import { useTheme, useMediaQuery } from "@mui/material";
+import { useTheme, useMediaQuery, Box } from "@mui/material";
 import {
   NotificationsProvider,
   useNotifications,
@@ -86,7 +86,13 @@ export default function App() {
       navigation={NAVIGATION}
       branding={{
         title: isMdUp ? "Sport AI" : "",
-        logo: null,
+        logo: (
+          <Box
+            component={"img"}
+            sx={{ maxWidth: 160 }}
+            src="/public/static/media/logo.png"
+          />
+        ),
       }}
       session={session as any}
       authentication={AUTHENTICATION}

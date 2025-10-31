@@ -21,6 +21,7 @@ export interface TrainingSession {
   title: string;
   athlete: Athlete | number;
   sport_type: SportType & number;
+  sport_type_name?: string;
   pre_heart_rate: number;
   post_heart_rate: number;
   exercise_count: number;

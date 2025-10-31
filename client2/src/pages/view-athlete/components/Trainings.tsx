@@ -291,7 +291,7 @@ export const Trainings = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={t.sport_type?.name || "—"}
+                          label={t?.sport_type_name || "—"}
                           size="small"
                           color="primary"
                           variant="outlined"
