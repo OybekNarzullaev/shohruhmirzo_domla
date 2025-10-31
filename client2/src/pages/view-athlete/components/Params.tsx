@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import {
   Accordion,
   AccordionDetails,
@@ -10,7 +11,7 @@ import {
   Button,
   Chip,
   IconButton,
-  LinearProgress,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -33,174 +35,338 @@ import { useNotifications } from "@toolpad/core/useNotifications";
 import { formatDataTimeISO } from "../../../utils/funtions";
 
 export const Params = () => {
-  const id = useParams().id as string;
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [selected, setSelected] = useState<AthleteParams | undefined>(
-    undefined
-  );
+  const { id } = useParams<{ id: any }>();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  const [expanded, setExpanded] = useState(true);
+  const [selected, setSelected] = useState<AthleteParams | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const notifications = useNotifications();
-  const [isOpenAddModal, setIsOpenAddModal] = useState(false);
+
+  // === 1. Parametrlar ===
   const {
-    data: params,
+    data: response,
     isFetching: isFetchingParams,
     refetch,
   } = useQuery({
-    queryKey: [id, "get-athlete-params"],
+    queryKey: ["athlete-params", id],
     queryFn: () => listAthleteParamsAPI(id),
+    enabled: !!id,
   });
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data: AthleteParams) => createAthleteParamAPI(data),
-    onSuccess: () => {
-      refetch();
-      notifications.show("Yaratildi!", {
-        autoHideDuration: 3000,
-        severity: "success",
-      });
-    },
-  });
+  const params = response?.results || [];
+  const isLoading = isFetchingParams || !response;
 
-  const { mutate: edit, isPending: isEditing } = useMutation({
+  // === 2. Mutatsiyalar ===
+  const { mutate: create, isPending: isCreating } = useMutation({
     mutationFn: (data: AthleteParams) =>
-      editAthleteParamAPI(data.id as number, data),
+      createAthleteParamAPI({ ...data, athlete: id as any }),
     onSuccess: () => {
       refetch();
-      notifications.show("Tahrirlandi!", {
-        autoHideDuration: 3000,
-        severity: "success",
-      });
+      closeModal();
+      notifications.show("Parametr yaratildi", { severity: "success" });
     },
   });
 
-  const { mutateAsync: deleteMutationAsync, isPending: isDeleting } =
-    useMutation({
-      mutationFn: (id: number) => deleteAthleteParamAPI(id),
-      onSuccess: () => {
-        refetch();
-        notifications.show("O'chirildi!", {
-          autoHideDuration: 3000,
-          severity: "success",
-        });
-      },
-    });
+  const { mutate: update, isPending: isUpdating } = useMutation({
+    mutationFn: (data: AthleteParams) =>
+      editAthleteParamAPI(data.id!, { ...data, athlete: id }),
+    onSuccess: () => {
+      refetch();
+      closeModal();
+      notifications.show("Parametr tahrirlandi", { severity: "success" });
+    },
+  });
 
-  const onCreate = (data: AthleteParams) => {
-    data["athlete"] = parseInt(id) as any;
-    mutate(data);
+  const { mutateAsync: remove, isPending: isDeleting } = useMutation({
+    mutationFn: (paramId: number) => deleteAthleteParamAPI(paramId),
+    onSuccess: () => {
+      refetch();
+      notifications.show("Parametr o‘chirildi", { severity: "success" });
+    },
+  });
+
+  // === 3. Modal boshqaruv ===
+  const openCreateModal = () => {
+    setSelected(null);
+    setIsModalOpen(true);
   };
 
-  const onEdit = (data: AthleteParams) => {
-    data["athlete"] = parseInt(id) as any;
-    edit(data);
+  const openEditModal = (param: AthleteParams) => {
+    setSelected(param);
+    setIsModalOpen(true);
   };
 
-  const onDelete = (data: AthleteParams) => {
-    const ok = confirm("O'chirilsinmi?");
-    if (ok) {
-      setSelected(data);
-      deleteMutationAsync(data?.id as number).finally(() =>
-        setSelected(undefined)
-      );
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelected(null);
+  };
+
+  const handleSubmit = (data: AthleteParams) => {
+    if (selected) {
+      update(data);
+    } else {
+      create(data);
     }
   };
 
+  const handleDelete = async (param: AthleteParams) => {
+    if (!window.confirm("Bu parametrni o‘chirishni xohlaysizmi?")) return;
+    try {
+      await remove(param.id!);
+    } catch {
+      notifications.show("Xatolik yuz berdi", { severity: "error" });
+    }
+  };
+
+  // === 4. Ranglar (Dark Mode) ===
+  const bgColor = isDark ? "grey.900" : "background.paper";
+  const borderColor = isDark ? "grey.700" : "grey.300";
+  const hoverBg = theme.palette.action.hover;
+
   return (
     <>
+      {/* Modal */}
       <AthleteParamsModal
-        athleteParams={selected}
-        isLoading={isPending || isEditing}
-        open={isOpenAddModal}
-        onClose={() => {
-          setIsOpenAddModal(false);
-          setSelected(undefined);
-        }}
-        onSubmit={selected ? onEdit : onCreate}
+        athleteParams={selected || undefined}
+        open={isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        isLoading={isCreating || isUpdating}
       />
-      <Accordion expanded={isExpanded}>
+
+      {/* Accordion */}
+      <Accordion
+        expanded={expanded}
+        onChange={() => setExpanded((prev) => !prev)}
+        sx={{
+          borderRadius: 2,
+          bgcolor: bgColor,
+          boxShadow: isDark ? 4 : 3,
+          border: `1px solid ${borderColor}`,
+          "&:before": { display: "none" },
+          transition: "all 0.3s ease",
+        }}
+      >
         <AccordionSummary
-          onClick={() => setIsExpanded((e) => !e)}
-          expandIcon={<ExpandMoreIcon />}
-          aria-controls="panel1-content"
-          id="panel1-header"
+          expandIcon={<ExpandMoreIcon sx={{ color: "background.default" }} />}
+          sx={{
+            bgcolor: "primary.main",
+            color: "background.default",
+            borderRadius: expanded ? "8px 8px 0 0" : 2,
+            minHeight: 56,
+            "& .MuiAccordionSummary-content": { alignItems: "center" },
+            "&:hover": { bgcolor: "primary.dark" },
+          }}
         >
-          <Typography variant="h6" mb={1}>
+          <Typography variant="h6" fontWeight="medium">
             Parametrlar
           </Typography>
         </AccordionSummary>
-        <AccordionDetails>
-          <Stack p={1} direction={"row"} justifyContent={"end"}>
-            <Button variant="contained" onClick={() => setIsOpenAddModal(true)}>
-              Qo'shish
+
+        <AccordionDetails sx={{ p: { xs: 2, sm: 3 } }}>
+          {/* Qo'shish tugmasi */}
+          <Stack direction="row" justifyContent="flex-end" mb={2}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={openCreateModal}
+            >
+              Qo‘shish
             </Button>
           </Stack>
-          {isFetchingParams && <LinearProgress />}
-          <Box sx={{ overflow: "auto" }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>№</TableCell>
-                  <TableCell>Og'irligi</TableCell>
-                  <TableCell>Balandligi</TableCell>
-                  <TableCell>BMI</TableCell>
-                  <TableCell>Qayd etilgan vaqti</TableCell>
-                  <TableCell>Izoh</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {params?.results?.map((p, i) => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      {i + 1}
-                      {i === params.results.length - 1 ? (
-                        <Chip
-                          sx={{ ml: 1 }}
-                          label="Joriy"
-                          color="success"
-                          variant="filled"
-                        />
-                      ) : (
-                        <Chip
-                          sx={{ ml: 1 }}
-                          label="Eski"
-                          color="warning"
-                          variant="filled"
-                        />
-                      )}
+
+          {/* Loading */}
+          {isLoading ? (
+            <Stack spacing={1}>
+              {[...Array(3)].map((_, i) => (
+                <Skeleton
+                  key={i}
+                  height={56}
+                  sx={{ bgcolor: isDark ? "grey.800" : "grey.200" }}
+                />
+              ))}
+            </Stack>
+          ) : params.length === 0 ? (
+            <Box
+              sx={{
+                py: 6,
+                textAlign: "center",
+                color: "text.secondary",
+              }}
+            >
+              <Typography variant="h6">Parametrlar mavjud emas</Typography>
+              <Typography variant="body2" mt={1}>
+                Yangi parametr qo‘shish uchun “Qo‘shish” tugmasini bosing.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ overflowX: "auto" }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      №
                     </TableCell>
-                    <TableCell>{p.weight}</TableCell>
-                    <TableCell>{p.height}</TableCell>
-                    <TableCell>{p.bmi}</TableCell>
-                    <TableCell>{formatDataTimeISO(p.created_at)}</TableCell>
-                    <TableCell>{p.description}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        color="warning"
-                        onClick={() => {
-                          setIsOpenAddModal(true);
-                          setSelected(p);
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        disabled={selected?.id === p.id && isDeleting}
-                        onClick={() => onDelete(p)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      Og‘irligi
+                    </TableCell>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      Bo‘yi
+                    </TableCell>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      BMI
+                    </TableCell>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      Sana
+                    </TableCell>
+                    <TableCell
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      Izoh
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: "bold", color: "text.secondary" }}
+                    >
+                      Amallar
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {!isFetchingParams && params?.results.length === 0 && (
-              <Typography p={2} textAlign={"center"}>
-                Ma'lumotlar mavjud emas
-              </Typography>
-            )}
-          </Box>
+                </TableHead>
+                <TableBody>
+                  {params.map((p, i) => {
+                    const isLatest = i === params.length - 1;
+                    return (
+                      <TableRow
+                        key={p.id}
+                        sx={{
+                          "&:hover": { bgcolor: hoverBg },
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        <TableCell>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={1}
+                          >
+                            <Typography variant="body2">{i + 1}</Typography>
+                            <Chip
+                              label={isLatest ? "Joriy" : "Eski"}
+                              size="small"
+                              color={isLatest ? "success" : "warning"}
+                              sx={{
+                                fontSize: "0.65rem",
+                                height: 20,
+                                bgcolor: isLatest
+                                  ? isDark
+                                    ? "success.dark"
+                                    : "success.light"
+                                  : isDark
+                                    ? "warning.dark"
+                                    : "warning.light",
+                                color: isLatest
+                                  ? "success.contrastText"
+                                  : "warning.contrastText",
+                              }}
+                            />
+                          </Stack>
+                        </TableCell>
+                        <TableCell>{p.weight} kg</TableCell>
+                        <TableCell>{p.height} sm</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={p?.bmi?.toFixed(2)}
+                            size="small"
+                            color={
+                              p.bmi < 18.5
+                                ? "info"
+                                : p.bmi < 25
+                                  ? "success"
+                                  : p.bmi < 30
+                                    ? "warning"
+                                    : "error"
+                            }
+                            sx={{ fontWeight: "medium" }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" noWrap>
+                            {formatDataTimeISO(p.created_at)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 180,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={p.description}
+                          >
+                            {p.description || "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            justifyContent="flex-end"
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() => openEditModal(p)}
+                              title="Tahrirlash"
+                              sx={{
+                                color: "background.default",
+                                bgcolor: isDark
+                                  ? "primary.dark"
+                                  : "primary.light",
+                                "&:hover": {
+                                  bgcolor: "primary.main",
+                                },
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDelete(p)}
+                              disabled={isDeleting}
+                              title="O‘chirish"
+                              sx={{
+                                color: "background.default",
+                                bgcolor: isDark ? "error.dark" : "error.light",
+                                "&:hover": {
+                                  bgcolor: "error.main",
+                                  color: "background.default",
+                                },
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
         </AccordionDetails>
       </Accordion>
     </>

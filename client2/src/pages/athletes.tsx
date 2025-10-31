@@ -21,154 +21,162 @@ import {
 } from "@mui/material";
 import { formatDataTimeISO } from "../utils/funtions";
 
-// Optional: If you have an API to fetch AthleteLevels, define it here.
-// For now, assuming levels are fetched separately or hardcoded for demo.
-// If levels are dynamic, add a getLevelsAPI and use in renderFormField.
-
-const athletesDataSource: DataSource<Athlete> = {
-  fields: [
-    { field: "id", headerName: "ID", type: "number", editable: false },
-    {
-      field: "firstname",
-      headerName: "First Name",
-      type: "string",
-      width: 150,
-    },
-    { field: "lastname", headerName: "Last Name", type: "string", width: 150 },
-    {
-      field: "patronymic",
-      headerName: "Patronymic",
-      type: "string",
-      width: 150,
-    },
-    {
-      field: "level",
-      headerName: "Level",
-      width: 150,
-      valueGetter: (v: AthleteLevel) => v.name,
-      renderFormField: ({ value, onChange, error }) => {
-        const { isLoading, data } = useQuery({
-          queryKey: ["athlete-levels"],
-          queryFn: listAthleteLevelsAPI,
-          staleTime: Infinity,
-        });
-
-        return (
-          <FormControl fullWidth>
-            <InputLabel id="athlete-level-select-label">Daraja</InputLabel>
-            <Select
-              labelId="athlete-level-select-label"
-              id="athlete-level-select"
-              value={value}
-              disabled={isLoading}
-              error={!!error}
-              label="Age"
-              onChange={onChange as any}
-            >
-              {data?.map((d) => (
-                <MenuItem key={d.id} value={d.id}>
-                  {d.name}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>{error ?? " "}</FormHelperText>
-          </FormControl>
-        );
-      },
-    },
-    { field: "birth_year", headerName: "Birth Year", type: "number" }, // Could be 'date' if formatted properly
-    {
-      field: "picture",
-      headerName: "Picture",
-      renderCell: (cell) => (
-        <Box height={50} component={"img"} src={cell.value}></Box>
-      ),
-      renderFormField: ({ value, onChange, error }) => (
-        <ImageUpload
-          value={value as File}
-          onChange={onChange as any}
-          error={error}
-        />
-      ),
-    }, // Could add image preview if needed
-
-    {
-      field: "created_at",
-      width: 150,
-      headerName: "Created At",
-      // type: "dateTime",
-      editable: false,
-      renderCell: (cell) => formatDataTimeISO(cell.value),
-    },
-    {
-      field: "updated_at",
-      width: 150,
-      headerName: "Updated At",
-      renderCell: (cell) => formatDataTimeISO(cell.value),
-      // type: "dateTime",
-      editable: false,
-    },
-  ],
-  getMany: async ({ paginationModel }) => {
-    const athletes = await listAthletesAPI();
-    const { page = athletes.current_page, pageSize = athletes.page_size } =
-      paginationModel || {};
-    const start = page * pageSize;
-    const paginatedAthletes = athletes.results.slice(start, start + pageSize);
-    return {
-      items: paginatedAthletes,
-      itemCount: athletes.count, // For server-side pagination, fetch count from API if available
-    };
-  },
-  getOne: async (id) => {
-    // Note: Your API doesn't have a getOne, so we'll fetch all and find. In production, add a getOne API.
-    const athletes = await listAthletesAPI();
-    return athletes.results.find((athlete) => athlete.id === id) as Athlete;
-  },
-  createOne: async (data) => {
-    const newAthlete = await createAthleteAPI(data);
-    return newAthlete;
-  },
-  updateOne: async (id, data) => {
-    const updatedAthlete = await updateAthleteAPI(id as number, data);
-    return updatedAthlete;
-  },
-  deleteOne: async (id) => {
-    await deleteAthleteAPI(id as number);
-  },
-  validate: (values) => {
-    const issues = [];
-    if (!values.firstname)
-      issues.push({ message: "First name required", path: ["firstname"] });
-    if (!values.lastname)
-      issues.push({ message: "Last name required", path: ["lastname"] });
-
-    if (!values.level)
-      issues.push({ message: "Level required", path: ["level"] });
-    if (!values.patronymic)
-      issues.push({ message: "Patronymic required", path: ["patronymic"] });
-    if (!values.birth_year)
-      issues.push({ message: "Birth year required", path: ["birth_year"] });
-
-    if (!values.picture)
-      issues.push({ message: "Rasm kerak", path: ["picture"] });
-
-    // Add more validations as needed, e.g., for picture URL format
-    return { issues };
-  },
-};
-
 // Optional cache for performance
 const athletesCache = new DataSourceCache();
 
 function AthleteCrudPage() {
   const router = useDemoRouter("/athletes");
 
-  // Remove this const when copying and pasting into your project.
+  // To'g'ri match qilish
+  const showAthleteId = matchPath(":id", router.pathname);
+  const editAthleteId = matchPath(":id/edit", router.pathname);
 
-  const showAthleteId = matchPath("/athletes/:athleteId", router.pathname);
-  const editAthleteId = matchPath("/athletes/:athleteId/edit", router.pathname);
+  const athletesDataSource: DataSource<Athlete> = {
+    fields: [
+      { field: "id", headerName: "#ID", type: "number", editable: false },
+      {
+        field: "firstname",
+        headerName: "Ism",
+        type: "string",
+        width: 150,
+      },
+      { field: "lastname", headerName: "Familiya", type: "string", width: 150 },
+      {
+        field: "patronymic",
+        headerName: "Otasining ismi",
+        type: "string",
+        width: 150,
+      },
+      {
+        field: "level_id",
+        type: "number",
+        width: 150,
+        hideable: true,
+        renderFormField: ({ value, onChange, error }: any) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const { isLoading, data } = useQuery({
+            queryKey: ["athlete-levels"],
+            queryFn: listAthleteLevelsAPI,
+            staleTime: Infinity,
+          });
 
+          return (
+            <FormControl fullWidth>
+              <InputLabel id="athlete-level-select-label">Daraja</InputLabel>
+              <Select
+                labelId="athlete-level-select-label"
+                id="athlete-level-select"
+                value={value}
+                disabled={isLoading}
+                error={!!error}
+                label="Daraja"
+                onChange={(e) => onChange(e.target.value)}
+              >
+                {data?.map((d) => (
+                  <MenuItem key={d.id} value={d.id}>
+                    {d.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>{error ?? " "}</FormHelperText>
+            </FormControl>
+          );
+        },
+      },
+
+      {
+        field: "level",
+        headerName: "Darajasi",
+        width: 150,
+        editable: false,
+        valueGetter: (v: AthleteLevel) => v.name,
+      },
+      { field: "birth_year", headerName: "Tug'ilgan yili", type: "number" }, // Could be 'date' if formatted properly
+      {
+        field: "picture",
+        headerName: "Rasmi",
+        renderCell: (cell) => (
+          <Box height={50} component={"img"} src={cell.value}></Box>
+        ),
+        renderFormField: ({ value, onChange, error }) => (
+          <ImageUpload
+            value={value as File}
+            onChange={onChange as any}
+            error={error}
+          />
+        ),
+      }, // Could add image preview if needed
+
+      {
+        field: "created_at",
+        width: 150,
+        headerName: "Qayd vaqti",
+        // type: "dateTime",
+        editable: false,
+        renderCell: (cell) => formatDataTimeISO(cell.value),
+      },
+      {
+        field: "updated_at",
+        width: 150,
+        headerName: "Oxirgi tahrirlangan",
+        renderCell: (cell) => formatDataTimeISO(cell.value),
+        // type: "dateTime",
+        editable: false,
+      },
+    ],
+    getMany: async ({ paginationModel }) => {
+      const athletesRes = await listAthletesAPI();
+      const athletes = athletesRes;
+      const { page = athletes.current_page, pageSize = athletes.page_size } =
+        paginationModel || {};
+      const start = page * pageSize;
+      const paginatedAthletes = athletes.results.slice(start, start + pageSize);
+      return {
+        items: paginatedAthletes,
+        itemCount: athletes.count, // For server-side pagination, fetch count from API if available
+      };
+    },
+    getOne: async (id) => {
+      // Note: Your API doesn't have a getOne, so we'll fetch all and find. In production, add a getOne API.
+      const athletes = await listAthletesAPI();
+      const athlete = athletes.results.find(
+        (athlete) => athlete.id === Number(id)
+      );
+      if (!athlete) throw new Error("Sportchi topilmadi");
+      return athlete;
+    },
+    createOne: async (data) => {
+      const newAthlete = await createAthleteAPI(data);
+      return newAthlete;
+    },
+    updateOne: async (id, data) => {
+      const updatedAthlete = await updateAthleteAPI(id as number, data);
+      return updatedAthlete;
+    },
+    deleteOne: async (id) => {
+      await deleteAthleteAPI(id as number);
+    },
+    validate: (values) => {
+      const issues = [];
+      if (!values.firstname)
+        issues.push({ message: "First name required", path: ["firstname"] });
+      if (!values.lastname)
+        issues.push({ message: "Last name required", path: ["lastname"] });
+
+      if (!values.level_id)
+        issues.push({ message: "Daraja tanlanishi shart", path: ["level_id"] });
+      if (!values.patronymic)
+        issues.push({ message: "Patronymic required", path: ["patronymic"] });
+      if (!values.birth_year)
+        issues.push({ message: "Birth year required", path: ["birth_year"] });
+
+      if (!values.picture)
+        issues.push({ message: "Rasm kerak", path: ["picture"] });
+
+      // Add more validations as needed, e.g., for picture URL format
+      return { issues };
+    },
+  };
   return (
     <Crud<Athlete>
       dataSource={athletesDataSource}
@@ -178,8 +186,6 @@ function AthleteCrudPage() {
       defaultValues={{
         firstname: "",
         lastname: "",
-        name: "",
-        level: 1 as any, // Default level ID
         patronymic: "",
         birth_year: "",
         picture: "",
@@ -188,8 +194,10 @@ function AthleteCrudPage() {
       pageTitles={{
         list: "Sportchilar ro'yhati",
         create: "Sportchi yaratish",
-        edit: `Sportchi ${editAthleteId} - Tahrirlash`,
-        show: `Sportchi ${showAthleteId}`,
+        edit: editAthleteId
+          ? `Sportchi #${editAthleteId} - Tahrirlash`
+          : "Tahrirlash",
+        show: showAthleteId ? `Sportchi #${showAthleteId}` : "Ko'rish",
       }}
       slotProps={{
         list: {

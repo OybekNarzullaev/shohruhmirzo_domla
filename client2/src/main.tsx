@@ -50,7 +50,7 @@ const router = createBrowserRouter([
             Component: AthletesPage,
           },
           {
-            path: "athletes/:athleteId/edit",
+            path: "athletes/:id/edit",
             Component: AthletesPage,
           },
         ],

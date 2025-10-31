@@ -24,7 +24,7 @@ export interface Athlete extends DataModel {
 export interface AthleteParams {
   id?: number;
   athlete: Athlete & number;
-  bmi?: number;
+  bmi: number;
   weight: number;
   height: number;
   created_at?: string;

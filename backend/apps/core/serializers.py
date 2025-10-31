@@ -33,6 +33,12 @@ class AthleteLevelSerializer(serializers.ModelSerializer):
 class AthleteSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField()
     params = serializers.SerializerMethodField(read_only=True)
+    level_id = serializers.PrimaryKeyRelatedField(
+        queryset=AthleteLevel.objects.all(),
+        source="level",
+
+    )
+    level = AthleteLevelSerializer(read_only=True)
 
     class Meta:
         model = Athlete
@@ -41,6 +47,19 @@ class AthleteSerializer(serializers.ModelSerializer):
     def get_params(self, obj):
         params = obj.params.last()
         return AthleteParamsSerializer(params).data
+
+    def to_internal_value(self, data):
+        """
+        `picture` maydoni string (URL) bo'lsa → uni olib tashlaydi
+        Faqat File yoki null bo'lsa saqlaydi
+        """
+        # Agar picture string (URL) bo'lsa → e'tiborsiz qoldiramiz
+        picture = data.get("picture")
+        if isinstance(picture, str):
+            data = data.copy()  # mutable qilish uchun
+            data.pop("picture", None)
+
+        return super().to_internal_value(data)
 
 
 class TrainingSessionSerializer(serializers.ModelSerializer):

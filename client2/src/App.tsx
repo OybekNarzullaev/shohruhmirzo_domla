@@ -86,6 +86,7 @@ export default function App() {
       navigation={NAVIGATION}
       branding={{
         title: isMdUp ? "Sport AI" : "",
+        logo: null,
       }}
       session={session as any}
       authentication={AUTHENTICATION}
