@@ -90,7 +90,7 @@ export default function App() {
           <Box
             component={"img"}
             sx={{ maxWidth: 160 }}
-            src="/public/static/media/logo.png"
+            src="/static/media/logo.png"
           />
         ),
       }}
