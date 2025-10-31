@@ -228,6 +228,19 @@ class TrainingSession(models.Model):
             'created_at': self.created_at
         }
 
+    def calculate_avg_fatigue(self, muscle_shortname, time_from=None, time_to=None):
+
+        fatigue_avg = MuscleFatigue.objects.filter(
+            muscle__shortname=muscle_shortname,
+            exercise__training=self
+        ).aggregate(models.Avg('fatigue'))['fatigue__avg']
+
+        return {
+            'fatigue_avg': fatigue_avg,
+            'name': self.title,
+            'created_at': self.created_at
+        }
+
     def __str__(self):
         return f"{self.athlete.name} - {self.sport_type.name} ({self.created_at.date()})"
 

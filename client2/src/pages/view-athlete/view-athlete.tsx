@@ -6,9 +6,7 @@ import { useActivePage } from "@toolpad/core/useActivePage";
 import invariant from "invariant";
 
 import { Params } from "./components/Params";
-import { Trainings } from "./components/Trainings";
 import { Common } from "./components/Common";
-import { KLoadGraph } from "./components/KLoadGraph";
 
 const ViewAthletePage = () => {
   const id = useParams().id as string;
@@ -30,8 +28,6 @@ const ViewAthletePage = () => {
     <PageContainer breadcrumbs={breadcrumbs} title={title || `Yuklanmoqda...`}>
       <Common />
       <Params />
-      <Trainings />
-      <KLoadGraph />
     </PageContainer>
   );
 };

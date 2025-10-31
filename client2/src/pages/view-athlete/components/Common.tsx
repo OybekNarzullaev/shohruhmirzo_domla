@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
+import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
 import {
   Accordion,
   AccordionDetails,
@@ -239,7 +240,15 @@ export const Common = () => {
             <Divider sx={{ my: 3, borderColor: borderColor }} />
 
             {/* Tugma */}
-            <Stack direction="row" justifyContent="flex-end">
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                component={Link}
+                to={`/athletes/${athlete?.id}/trainings`}
+                variant="contained"
+                startIcon={<FitnessCenterIcon />}
+              >
+                Mashg'ulotlar
+              </Button>
               <Button
                 component={Link}
                 to={`/athletes/${athlete?.id}/edit`}

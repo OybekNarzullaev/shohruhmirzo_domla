@@ -99,6 +99,32 @@ class AthleteViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=True, methods=["get"])
+    def fatigue_by_training_graph(self, request, pk=None):
+        instance: Athlete = self.get_object()
+        muscle_shortname = request.query_params.get('muscle')
+        trainings = TrainingSession.objects.filter(athlete=instance)
+        data = {
+            'fatigue_avg': [],
+            'datetimes': [],
+            'titles': [],
+        }
+        for t in trainings:
+            d = t.calculate_avg_fatigue(muscle_shortname)
+            data['fatigue_avg'].append(d['fatigue_avg'])
+            data['datetimes'].append(d['created_at'])
+            data['titles'].append(d['name'])
+
+        return Response(
+            {
+                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
+                "rows_count": trainings.count(),
+                "columns": ['fatigue_avg'],
+                "signals": data,  # har bir kanal uchun massiv
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class AthleteLevelViewSet(viewsets.ModelViewSet):
     queryset = AthleteLevel.objects.all()

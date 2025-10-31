@@ -12,12 +12,26 @@ export const getAthleteAPI = async (id: number | string): Promise<Athlete> => {
 export const kLoadGraphAPI = async (
   id: number | string,
   muscle: string
-): Promise<Athlete> => {
+): Promise<any> => {
   const { data } = await api.get(`${BASE_URL}${id}/k_load_graph/`, {
     params: {
       muscle,
     },
   });
+  return data;
+};
+export const fatigueByTrainingGraph = async (
+  id: number | string,
+  muscle: string
+): Promise<any> => {
+  const { data } = await api.get(
+    `${BASE_URL}${id}/fatigue_by_training_graph/`,
+    {
+      params: {
+        muscle,
+      },
+    }
+  );
   return data;
 };
 export const listAthletesAPI = async (): Promise<Pagination<Athlete>> => {
