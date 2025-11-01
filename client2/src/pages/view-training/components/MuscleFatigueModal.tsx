@@ -13,14 +13,18 @@ import {
   IconButton,
   Stack,
   Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import { useQuery } from "@tanstack/react-query";
-import { muscleFatigueGraphAPI } from "../../../api/training";
+import { muscleFatigueGraphAPI } from "@/api/training";
 import Plot from "react-plotly.js";
 import type { Layout, Data } from "plotly.js";
-import { listMusclesAPI } from "../../../api/muscle";
-import type { Muscle } from "../../../types/Core";
+import { listMusclesAPI } from "@/api/muscle";
+import type { Muscle } from "@/types/Core";
 
 interface Props {
   open: boolean;
@@ -34,6 +38,7 @@ export const MuscleFatigueModal = ({
   onClose,
 }: Props) => {
   const [selectedMuscle, setSelectedMuscle] = useState<Muscle | null>(null);
+  const [precision, setPrecision] = useState<string>("0.01");
 
   // === 1. Muskullar ro'yxati ===
   const {
@@ -79,7 +84,7 @@ export const MuscleFatigueModal = ({
   }));
 
   // === 4. Layout ===
-  const layout: Partial<Layout> = {
+  const [layout, setLayout] = useState<Partial<Layout>>({
     title: {
       text: selectedMuscle
         ? `${selectedMuscle.title} – Charchoq grafigi`
@@ -88,9 +93,9 @@ export const MuscleFatigueModal = ({
     },
     xaxis: {
       title: { text: "Mashqlar ketma-ketligi" },
-      tickmode: "linear",
-      dtick: 1,
       gridcolor: "rgba(0,0,0,0.1)",
+      tickformat: ".0f",
+      automargin: true,
     },
     yaxis: {
       title: { text: "Charchoq darajasi" },
@@ -111,7 +116,21 @@ export const MuscleFatigueModal = ({
       y: 1,
       yanchor: "top",
     },
-  };
+  });
+
+  // === Precision o'zgarganda layoutni yangilash ===
+  useEffect(() => {
+    let tickformat = ".2f"; // Default: 0.01
+    if (precision === "Butun son") tickformat = ".0f";
+    else if (precision === "0.1") tickformat = ".1f";
+    else if (precision === "0.01") tickformat = ".2f";
+    else if (precision === "0.001") tickformat = ".3f";
+
+    setLayout((prev) => ({
+      ...prev,
+      yaxis: { ...prev.yaxis, tickformat },
+    }));
+  }, [precision]);
 
   // === 5. Yopish va tozalash ===
   const handleClose = () => {
@@ -180,6 +199,25 @@ export const MuscleFatigueModal = ({
               </IconButton>
             </Stack>
           </Paper>
+
+          {/* Y aniqligi select */}
+          {selectedMuscle && (
+            <Box sx={{ mb: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Y aniqligi</InputLabel>
+                <Select
+                  value={precision}
+                  onChange={(e) => setPrecision(e.target.value as string)}
+                  label="Y aniqligi"
+                >
+                  <MenuItem value="Butun son">Butun son</MenuItem>
+                  <MenuItem value="0.1">0.1</MenuItem>
+                  <MenuItem value="0.01">0.01</MenuItem>
+                  <MenuItem value="0.001">0.001</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
 
           {/* Grafik yoki holat */}
           {isLoadingGraph ? (

@@ -29,7 +29,7 @@ from apps.utils.ai.calculate_fatigue import predict_fatigue
 
 
 class CustomPagination(PageNumberPagination):
-    page_size = 50
+    page_size = 100
     page_size_query_param = "page_size"
     page_query_param = 'page'
     max_page_size = 100
@@ -77,7 +77,8 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def k_load_graph(self, request, pk=None):
         instance: Athlete = self.get_object()
         muscle_shortname = request.query_params.get('muscle')
-        trainings = TrainingSession.objects.filter(athlete=instance)
+        trainings = TrainingSession.objects.filter(
+            athlete=instance).order_by('id')
         data = {
             'k_adapt_load': [],
             'datetimes': [],
@@ -103,7 +104,8 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def fatigue_by_training_graph(self, request, pk=None):
         instance: Athlete = self.get_object()
         muscle_shortname = request.query_params.get('muscle')
-        trainings = TrainingSession.objects.filter(athlete=instance)
+        trainings = TrainingSession.objects.filter(
+            athlete=instance).order_by('id')
         data = {
             'fatigue_avg': [],
             'datetimes': [],

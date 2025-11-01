@@ -1,4 +1,3 @@
-import * as React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { createTheme } from "@mui/material/styles";
@@ -10,7 +9,6 @@ import LayersIcon from "@mui/icons-material/Layers";
 import { AppProvider, type Navigation } from "@toolpad/core/AppProvider";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { DemoProvider, useDemoRouter } from "@toolpad/core/internal";
-import { SignInPage } from "@toolpad/core/SignInPage";
 
 const NAVIGATION: Navigation = [
   {
