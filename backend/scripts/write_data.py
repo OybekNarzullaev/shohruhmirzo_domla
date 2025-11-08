@@ -17,7 +17,7 @@ def run():
     df = pd.read_excel('data.xlsx')
     rows = df.iloc[1:]
     for index, row in rows.iterrows():
-        training_id = int(row['day']) + 33
+        training_id = int(row['day']) + 31
         training = TrainingSession.objects.get(id=training_id)
         exercise = Exercise.objects.filter(
             description=row['exercise'], training_id=training_id
