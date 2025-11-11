@@ -157,7 +157,7 @@ export const TrainingSessionModal: React.FC<Props> = ({
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Dastlabki yurak urishi"
+                    label="Oxirgi yurak urishi"
                     fullWidth
                     type="number"
                     error={!!errors.post_heart_rate}
