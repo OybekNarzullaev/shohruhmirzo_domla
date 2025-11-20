@@ -20,13 +20,14 @@ import {
   Select,
 } from "@mui/material";
 import { formatDataTimeISO } from "../utils/funtions";
+import { useSessionStore } from "@/store/auth";
 
 // Optional cache for performance
 const athletesCache = new DataSourceCache();
 
 function AthleteCrudPage() {
   const router = useDemoRouter("/athletes");
-
+  const { session } = useSessionStore();
   // To'g'ri match qilish
   const showAthleteId = matchPath(":id", router.pathname);
   const editAthleteId = matchPath(":id/edit", router.pathname);
@@ -47,6 +48,7 @@ function AthleteCrudPage() {
         type: "string",
         width: 150,
       },
+
       {
         field: "level_id",
         type: "number",
@@ -146,7 +148,8 @@ function AthleteCrudPage() {
       return athlete;
     },
     createOne: async (data) => {
-      const newAthlete = await createAthleteAPI(data);
+      const coach_id = session?.user.id as any;
+      const newAthlete = await createAthleteAPI({ ...data, coach_id });
       return newAthlete;
     },
     updateOne: async (id, data) => {

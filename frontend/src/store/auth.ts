@@ -1,63 +1,46 @@
 import { create } from "zustand";
-import { login as apiLogin, logout as apiLogout, getProfile } from "@/api/auth";
-import type { Profile } from "@/types/Profile";
+import { persist } from "zustand/middleware";
+import type { Profile } from "../types/Profile";
 
-interface AuthState {
-  user: Profile | null;
-  isLoading: boolean;
-  token: string | null;
-  isAuth: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  fetchProfile: () => Promise<void>;
-  logout: () => Promise<void>;
+export interface Session {
+  user: Profile;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user") as string)
-    : undefined,
-  isLoading: false,
-  token: localStorage.getItem("token"),
-  isAuth: !!localStorage.getItem("token"),
+interface SessionState {
+  token: string | null;
+  session: Session | null;
+  loading: boolean;
+  error: string | null;
+  setSession: (session: Session | null) => void;
+  setToken: (token: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (message: string | null) => void;
+  clearSession: () => void;
+}
 
-  async login(username, password) {
-    set({ isLoading: true });
-    try {
-      const res = await apiLogin(username, password);
-      const token = res.data.token;
-      localStorage.setItem("token", token);
-      set({ token, isAuth: true });
-      const res2 = await getProfile();
-      set({ user: res2.data });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+export const useSessionStore = create<SessionState>()(
+  persist(
+    (set) => ({
+      session: null,
+      loading: true,
+      error: null,
+      token: null,
 
-  async fetchProfile() {
-    set({ isLoading: true });
-    try {
-      const res = await getProfile();
-      set({ user: res.data });
-      localStorage.setItem("user", JSON.stringify(res.data));
-    } catch (err) {
-      console.error("Profilni yuklab bo‘lmadi", err);
-    } finally {
-      set({ isLoading: false });
+      setToken: (token) => set({ token, loading: false, error: null }),
+      setSession: (session) => set({ session, loading: false, error: null }),
+      setLoading: (loading) => set({ loading }),
+      setError: (message) => set({ error: message }),
+      clearSession: () =>
+        set({ session: null, loading: false, token: null, error: null }),
+    }),
+    {
+      name: "session-storage", // localStorage kaliti
+      // 🧠 faqat sessionni saqlamaymiz:
+      partialize: (state) => ({
+        token: state.token,
+        loading: state.loading,
+        error: state.error,
+      }),
     }
-  },
-
-  async logout() {
-    set({ isLoading: true });
-    try {
-      await apiLogout();
-    } catch (error) {
-      console.log(error);
-    } finally {
-      localStorage.removeItem("token");
-      set({ user: null, token: null, isAuth: false, isLoading: false });
-    }
-  },
-}));
+  )
+);

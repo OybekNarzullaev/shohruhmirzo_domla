@@ -31,12 +31,13 @@ class AthleteParamsInline(admin.TabularInline):
 # --- Asosiy admin modellar ---
 @admin.register(Athlete)
 class AthleteAdmin(admin.ModelAdmin):
-    list_display = ("name", "birth_year", "level", "created_at")
+    list_display = ("name", "birth_year", "level", "coach", "created_at")
     search_fields = ("firstname", "lastname", "level", "patronymic")
     list_filter = ("birth_year",)
     inlines = [AthleteParamsInline]
     readonly_fields = ("created_at", "updated_at")
     ordering = ("lastname", "firstname")
+    autocomplete_fields = ("coach",)
 
 
 @admin.register(AthleteParams)

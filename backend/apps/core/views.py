@@ -57,13 +57,15 @@ class SportTypeViewSet(viewsets.ModelViewSet):
 
 
 class AthleteViewSet(viewsets.ModelViewSet):
-    queryset = Athlete.objects.all().select_related("level")
+    queryset = Athlete.objects.all().select_related("coach")
     serializer_class = AthleteSerializer
     pagination_class = CustomPagination
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(
+            self.get_queryset()
+        ).filter(coach=request.user)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

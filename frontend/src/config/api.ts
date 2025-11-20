@@ -1,13 +1,13 @@
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 
-import { useAuthStore } from "@/store/auth";
+import { useSessionStore } from "../store/auth";
 import { toast } from "react-toastify";
 
 const setupInterceptors = (api: AxiosInstance) => {
   // 🔹 Request Interceptor — tokenni headerga qo‘shadi
   api.interceptors.request.use(
     (config) => {
-      const token = useAuthStore.getState().token;
+      const token = useSessionStore.getState()?.token;
       if (token) {
         config.headers.Authorization = `Token ${token}`;
       }
@@ -25,8 +25,8 @@ const setupInterceptors = (api: AxiosInstance) => {
       if (!response) {
         toast.error("Server bilan aloqa yo‘q.");
       } else if (response.status === 401) {
-        const { logout } = useAuthStore.getState();
-        logout();
+        const { clearSession } = useSessionStore.getState();
+        clearSession();
         toast.info("Sessiya tugadi. Qayta tizimga kiring.");
       } else if (response.status >= 500) {
         toast.error("Serverda xatolik yuz berdi.");
@@ -40,7 +40,10 @@ const setupInterceptors = (api: AxiosInstance) => {
 };
 
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/",
+  baseURL:
+    import.meta.env.MODE === "production"
+      ? `${window.location.protocol}/api`
+      : "http://localhost:8000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

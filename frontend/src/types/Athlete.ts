@@ -1,4 +1,5 @@
 import type { DataModel } from "@toolpad/core/Crud";
+import type { Profile } from "./Profile";
 
 export interface AthleteLevel {
   id?: number;
@@ -12,6 +13,7 @@ export interface Athlete extends DataModel {
   firstname: string;
   lastname: string;
   name: string;
+  coach: Profile & number;
   level: AthleteLevel & number;
   patronymic: string;
   birth_year: string;

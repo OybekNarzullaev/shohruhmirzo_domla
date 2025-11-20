@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from .models import Athlete, AthleteParams, SportType, AthleteLevel, TrainingSession, Exercise, MuscleFatigue, Muscle
 
+from apps.users.models import User
+from apps.users.serializers import UserSerializer
+
 
 class SportTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,9 +39,13 @@ class AthleteSerializer(serializers.ModelSerializer):
     level_id = serializers.PrimaryKeyRelatedField(
         queryset=AthleteLevel.objects.all(),
         source="level",
-
+    )
+    coach_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source="coach",
     )
     level = AthleteLevelSerializer(read_only=True)
+    coach = UserSerializer(read_only=True)
 
     class Meta:
         model = Athlete
@@ -54,6 +61,7 @@ class AthleteSerializer(serializers.ModelSerializer):
         Faqat File yoki null bo'lsa saqlaydi
         """
         # Agar picture string (URL) bo'lsa → e'tiborsiz qoldiramiz
+
         picture = data.get("picture")
         if isinstance(picture, str):
             data = data.copy()  # mutable qilish uchun

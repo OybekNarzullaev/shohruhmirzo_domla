@@ -3,6 +3,8 @@ from django.db.models.functions import Lower
 import pandas as pd
 import numpy as np
 
+from apps.users.models import User
+
 
 class Athlete(models.Model):
     firstname = models.CharField("Ism", max_length=50)
@@ -10,6 +12,8 @@ class Athlete(models.Model):
     level = models.ForeignKey(
         "AthleteLevel", on_delete=models.CASCADE, related_name='athlete'
     )
+    coach = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True, blank=True, related_name='athlete')
     patronymic = models.CharField("Otasining ismi", max_length=50, blank=True)
     birth_year = models.PositiveSmallIntegerField("Tug‘ilgan yil")
     picture = models.ImageField(
@@ -59,8 +63,8 @@ class AthleteParams(models.Model):
     )
 
     bmi = models.FloatField(default=0)
-    weight = models.PositiveSmallIntegerField("Vazn (kg)")
-    height = models.PositiveSmallIntegerField("Bo‘y (sm)")
+    weight = models.FloatField("Vazn (kg)")
+    height = models.FloatField("Bo‘y (sm)")
     created_at = models.DateTimeField("Yaratilgan sana", auto_now_add=True)
     description = models.TextField("Izoh", blank=True, null=True)
 
@@ -224,19 +228,6 @@ class TrainingSession(models.Model):
 
         return {
             'k_adapt_load': K.tolist(),
-            'name': self.title,
-            'created_at': self.created_at
-        }
-
-    def calculate_avg_fatigue(self, muscle_shortname, time_from=None, time_to=None):
-
-        fatigue_avg = MuscleFatigue.objects.filter(
-            muscle__shortname=muscle_shortname,
-            exercise__training=self
-        ).aggregate(models.Avg('fatigue'))['fatigue__avg']
-
-        return {
-            'fatigue_avg': fatigue_avg,
             'name': self.title,
             'created_at': self.created_at
         }
