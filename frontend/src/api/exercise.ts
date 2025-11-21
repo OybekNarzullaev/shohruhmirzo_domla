@@ -14,9 +14,28 @@ export const createExerciseAPI = async (params: {
 };
 
 export const listExercisesAPI = async (
-  training_id: number | string
+  training_id: number | string,
+  params?: {
+    page?: number;
+    page_size?: number;
+  }
 ): Promise<Pagination<Exercise>> => {
-  const { data } = await api.get(`/exercises/?training_id=${training_id}`);
+  const queryParams = new URLSearchParams();
+
+  queryParams.append("training_id", String(training_id));
+
+  if (params?.page) {
+    queryParams.append("page", String(params.page));
+  }
+
+  if (params?.page_size) {
+    queryParams.append("page_size", String(params.page_size));
+  }
+
+  const { data } = await api.get<Pagination<Exercise>>(
+    `/exercises/?${queryParams.toString()}`
+  );
+
   return data;
 };
 

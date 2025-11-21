@@ -40,16 +40,10 @@ export interface muscleFatigueGraphResponse {
 }
 
 export const muscleFatigueGraphAPI = async (
-  id: number | string,
-  muscle_shortname: string
+  id: number | string
 ): Promise<muscleFatigueGraphResponse> => {
   const { data } = await api.get(
-    `/training-sessions/${id}/muscleFatigueGraph/`,
-    {
-      params: {
-        muscle: muscle_shortname,
-      },
-    }
+    `/training-sessions/${id}/muscleFatigueGraph/`
   );
   return data;
 };

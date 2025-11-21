@@ -1,4 +1,5 @@
 from django.db import transaction
+import numpy as np
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -77,57 +78,160 @@ class AthleteViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def k_load_graph(self, request, pk=None):
-        instance: Athlete = self.get_object()
-        muscle_shortname = request.query_params.get('muscle')
-        trainings = TrainingSession.objects.filter(
-            athlete=instance).order_by('id')
-        data = {
-            'k_adapt_load': [],
-            'datetimes': [],
-            'titles': [],
-        }
-        for t in trainings:
-            d = t.calculate_k_adapt_load(muscle_shortname)
-            data['k_adapt_load'].append(d['k_adapt_load'])
-            data['datetimes'].append(d['created_at'])
-            data['titles'].append(d['name'])
+        """
+        Sportchi uchun BARCHA ishlatilgan muskullar bo‘yicha K-Load grafigi.
+        ?muscles=RF,VL  → ixtiyoriy filtr (faqat kerakli muskullar)
+        Agar berilmasa → sportchida hech bo‘lmaganda bitta mashqda ishlagan BARCHA muskullar avto-oladi
+        """
+        athlete: Athlete = self.get_object()
 
-        return Response(
-            {
-                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
-                "rows_count": trainings.count(),
-                "columns": ['k_adapt_load'],
-                "signals": data,  # har bir kanal uchun massiv
-            },
-            status=status.HTTP_200_OK,
-        )
+        # 1. Qaysi muskullar ishlatilganligini aniqlaymiz (sportchi haqiqatan ishlaganlari!)
+        used_muscle_shortnames = MuscleFatigue.objects.filter(
+            exercise__training__athlete=athlete
+        ).values_list("muscle__shortname", flat=True).distinct()
+
+        # Agar query paramsda muscles berilgan bo‘lsa – faqat ulardan filtrlaymiz
+        muscles_param = request.query_params.get("muscles")
+        if muscles_param:
+            requested = [s.strip().upper()
+                         for s in muscles_param.split(",") if s.strip()]
+            used_muscle_shortnames = used_muscle_shortnames.filter(
+                muscle__shortname__in=requested
+            )
+
+        # Muskullar ro‘yxatini olish
+        muscles = Muscle.objects.filter(
+            shortname__in=used_muscle_shortnames).order_by("title")
+
+        if not muscles.exists():
+            return Response({
+                "message": "Ushbu sportchi uchun hali hech qanday K-Load ma'lumoti yo'q.",
+                "titles": [],
+                "columns": [],
+                "signals": {},
+            })
+
+        # 2. Mashg‘ulotlarni tartib bilan olamiz
+        trainings = TrainingSession.objects.filter(
+            athlete=athlete).order_by("created_at")
+
+        # Natija konteynerlari
+        titles = []       # X o‘qi: Mashg‘ulot nomlari
+        signals = {}      # { "RF": [12.4, 15.6, ...], "VL": [8.1, 9.3, ...] }
+        columns = []      # ["RF", "VL", "BF", ...]
+
+        # Har bir muskul uchun bo‘sh massiv ochamiz
+        for muscle in muscles:
+            signals[muscle.shortname] = []
+            columns.append(muscle.shortname)
+
+        # 3. Har bir mashg‘ulot bo‘yicha barcha muskullar uchun K-load hisoblaymiz
+        for training in trainings:
+            titles.append(
+                training.title or f"Mashg'ulot {training.created_at.strftime('%d.%m')}")
+
+            for muscle in muscles:
+                result = training.calculate_k_adapt_load(muscle.shortname)
+                k_value = result.get("k_adapt_load", 0)
+
+                # Himoya: agar dHR=0 bo‘lsa yoki boshqa xatolik → 0
+                try:
+                    k_value = float(k_value)
+                    if np.isnan(k_value) or np.isinf(k_value):
+                        k_value = 0
+                except (TypeError, ValueError):
+                    k_value = 0
+
+                signals[muscle.shortname].append(round(k_value, 3))
+
+        return Response({
+            "message": "K-Load ma'lumotlari muvaffaqiyatli yuklandi ✅",
+            "rows_count": len(trainings),
+            "columns": columns,                    # ["RF", "VL", "BF", ...]
+            "signals": {
+                "titles": titles,                  # X o‘qi
+                **signals                          # Har bir muskulning qiymatlari
+            }
+        })
 
     @action(detail=True, methods=["get"])
     def fatigue_by_training_graph(self, request, pk=None):
-        instance: Athlete = self.get_object()
-        muscle_shortname = request.query_params.get('muscle')
-        trainings = TrainingSession.objects.filter(
-            athlete=instance).order_by('id')
-        data = {
-            'fatigue_avg': [],
-            'datetimes': [],
-            'titles': [],
-        }
-        for t in trainings:
-            d = t.calculate_avg_fatigue(muscle_shortname)
-            data['fatigue_avg'].append(d['fatigue_avg'])
-            data['datetimes'].append(d['created_at'])
-            data['titles'].append(d['name'])
+        """
+        Sportchi uchun BARCHA ishlatilgan muskullar bo‘yicha o‘rtacha charchoq (fatigue_avg) grafigi.
+        ?muscles=RF,VL,BF → ixtiyoriy filtr (faqat kerakli muskullar)
+        Agar berilmasa → sportchida hech bo‘lmaganda bitta mashqda ishlagan BARCHA muskullar avtomatik olinadi
+        """
+        athlete: Athlete = self.get_object()
 
-        return Response(
-            {
-                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
-                "rows_count": trainings.count(),
-                "columns": ['fatigue_avg'],
-                "signals": data,  # har bir kanal uchun massiv
-            },
-            status=status.HTTP_200_OK,
-        )
+        # 1. Sportchida ishlatilgan barcha muskullarni aniqlaymiz
+        used_muscle_shortnames = MuscleFatigue.objects.filter(
+            exercise__training__athlete=athlete
+        ).values_list("muscle__shortname", flat=True).distinct()
+
+        # Agar query paramsda muscles berilgan bo‘lsa – filtrlaymiz
+        muscles_param = request.query_params.get("muscles")
+        if muscles_param:
+            requested = [s.strip().upper()
+                         for s in muscles_param.split(",") if s.strip()]
+            used_muscle_shortnames = used_muscle_shortnames.filter(
+                muscle__shortname__in=requested
+            )
+
+        muscles = Muscle.objects.filter(
+            shortname__in=used_muscle_shortnames).order_by("title")
+
+        if not muscles.exists():
+            return Response({
+                "message": "Ushbu sportchi uchun hali charchoq ma'lumotlari yo‘q.",
+                "titles": [],
+                "columns": [],
+                "signals": {},
+            })
+
+        # 2. Mashg‘ulotlarni tartib bilan olamiz
+        trainings = TrainingSession.objects.filter(
+            athlete=athlete).order_by("created_at")
+
+        # Natija konteynerlari
+        titles = []                    # X o‘qi: Mashg‘ulot nomlari
+        # { "RF": [45.2, 58.1, ...], "VL": [32.4, 41.0, ...] }
+        signals = {}
+        columns = []                   # ["RF", "VL", "BF", ...]
+
+        # Har bir muskul uchun bo‘sh massiv
+        for muscle in muscles:
+            signals[muscle.shortname] = []
+            columns.append(muscle.shortname)
+
+        # 3. Har bir mashg‘ulot bo‘yicha barcha muskullar uchun o‘rtacha charchoqni hisoblaymiz
+        for training in trainings:
+            titles.append(
+                training.title or f"Mashg‘ulot {training.created_at.strftime('%d.%m.%Y')}")
+
+            for muscle in muscles:
+                result = training.calculate_avg_fatigue(muscle.shortname)
+                fatigue_val = result.get("fatigue_avg", 0)
+
+                # Himoya: agar None, NaN yoki xatolik bo‘lsa → 0
+                try:
+                    fatigue_val = float(fatigue_val)
+                    if np.isnan(fatigue_val) or np.isinf(fatigue_val):
+                        fatigue_val = 0
+                except (TypeError, ValueError):
+                    fatigue_val = 0
+
+                signals[muscle.shortname].append(round(fatigue_val, 2))
+
+        return Response({
+            "message": "O‘rtacha charchoq ma'lumotlari muvaffaqiyatli yuklandi ✅",
+            "rows_count": len(trainings),
+            # ["RF", "VL", "BF", ...]
+            "columns": columns,
+            "signals": {
+                "titles": titles,                            # X o‘qi
+                **signals                                    # Har bir muskulning qiymatlari
+            }
+        })
 
 
 class AthleteLevelViewSet(viewsets.ModelViewSet):
@@ -252,28 +356,83 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def muscleFatigueGraph(self, request, pk=None):
         """
-        Har bir ustunni (signal kanalini) alohida massiv sifatida yuboradi.
-        Plotly uchun qulay format.
+        Bitta mashg‘ulot ichidagi BARCHA muskullar bo‘yicha charchoq dinamikasi.
+        ?muscles=RF,VL,BF → ixtiyoriy filtr (faqat kerakli muskullar)
+        Agar berilmasa → mashg‘ulotda ishlatilgan barcha muskullar avtomatik olinadi
         """
-        muscle = request.query_params.get('muscle')
-        instance = self.get_object()
+        instance = self.get_object()  # TrainingSession
+
+        # 1. Mashg‘ulotdagi barcha mashqlarni tartib bilan olamiz
         exercises = Exercise.objects.filter(
-            training=instance).order_by('first_count')
+            training=instance).order_by("first_count")
 
-        fatigues = MuscleFatigue.objects.filter(
-            exercise__id__in=[ex.id for ex in exercises],
-            muscle__shortname=muscle
-        ).order_by('exercise__first_count').values_list('fatigue', flat=True)
+        if not exercises.exists():
+            return Response({
+                "message": "Ushbu mashg‘ulotda hech qanday mashq yo‘q.",
+                "rows_count": 0,
+                "columns": [],
+                "signals": {},
+            })
 
-        return Response(
-            {
-                "message": "Signal ma’lumotlari muvaffaqiyatli olindi ✅",
-                "rows_count": len(fatigues),
-                "columns": ['fatigues'],
-                "signals": fatigues,  # har bir kanal uchun massiv
-            },
-            status=status.HTTP_200_OK,
-        )
+        # 2. Ushbu mashg‘ulotda qaysi muskullar ishlatilgan?
+        used_muscle_shortnames = MuscleFatigue.objects.filter(
+            exercise__training=instance
+        ).values_list("muscle__shortname", flat=True).distinct()
+
+        # Agar query paramsda muscles berilgan bo‘lsa – filtrlaymiz
+        muscles_param = request.query_params.get("muscles")
+        if muscles_param:
+            requested = [s.strip().upper()
+                         for s in muscles_param.split(",") if s.strip()]
+            used_muscle_shortnames = used_muscle_shortnames.filter(
+                muscle__shortname__in=requested
+            )
+
+        muscles = Muscle.objects.filter(
+            shortname__in=used_muscle_shortnames).order_by("title")
+
+        if not muscles.exists():
+            return Response({
+                "message": "Ushbu mashg‘ulotda hali charchoq ma'lumotlari yo‘q.",
+                "rows_count": 0,
+                "columns": [],
+                "signals": {},
+            })
+
+        # 3. Har bir muskul uchun charchoq qiymatlarini yig‘amiz
+        signals = {}      # { "RF": [0.12, 0.45, 0.78, ...], "VL": [...] }
+        columns = []      # ["RF", "VL", ...]
+
+        for muscle in muscles:
+            shortname = muscle.shortname
+            columns.append(shortname)
+            signals[shortname] = []
+
+            fatigues = MuscleFatigue.objects.filter(
+                exercise__in=exercises,
+                muscle__shortname=shortname
+            ).order_by("exercise__first_count").values_list("fatigue", flat=True)
+
+            # Agar biror mashqda bu muskul ishlamagan bo‘lsa → 0 qo‘yamiz (bo‘sh joylar bo‘lmasligi uchun)
+            fatigue_list = list(fatigues)
+            if len(fatigue_list) < exercises.count():
+                # To‘ldirish: agar ma'lumot kam bo‘lsa, oxirigacha 0 qo‘shiladi
+                fatigue_list.extend(
+                    [0] * (exercises.count() - len(fatigue_list)))
+            elif len(fatigue_list) > exercises.count():
+                # Xavfsizlik uchun kesamiz
+                fatigue_list = fatigue_list[:exercises.count()]
+
+            # Qiymatlarni 2 kasrga yaxlitlaymiz
+            signals[shortname] = [round(float(f), 3) for f in fatigue_list]
+
+        return Response({
+            "message": "Muskullar bo‘yicha charchoq dinamikasi muvaffaqiyatli yuklandi ✅",
+            "rows_count": exercises.count(),          # Mashqlar soni (X o‘qi uzunligi)
+            # ["RF", "VL", "BF", ...]
+            "columns": columns,
+            "signals": signals,                        # Har bir muskulning massivi
+        })
 
 
 class ExercisesViewSet(viewsets.ModelViewSet):

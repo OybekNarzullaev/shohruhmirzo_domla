@@ -7,6 +7,7 @@ import invariant from "invariant";
 import { getTrainingSesssionAPI } from "../../api/training";
 import MuscleSignalsPlot from "./components/MuscleSignalsPlot";
 import { Exercises } from "./components/Exercises";
+import { MuscleFatigue } from "./components/MuscleFatigue";
 
 const ViewTrainingPage = () => {
   const id = useParams().id as string;
@@ -40,6 +41,7 @@ const ViewTrainingPage = () => {
       title={training?.title || `Yuklanmoqda...`}
     >
       <MuscleSignalsPlot />
+      <MuscleFatigue />
       <Exercises />
     </PageContainer>
   );

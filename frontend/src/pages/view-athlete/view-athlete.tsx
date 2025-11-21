@@ -7,6 +7,9 @@ import invariant from "invariant";
 
 import { Params } from "./components/Params";
 import { Common } from "./components/Common";
+import { Trainings } from "./components/Trainings";
+import { FatiguesByTrainingGraph } from "./components/FatiguesByTrainingGraph";
+import { KLoadGraph } from "./components/KLoadGraph";
 
 const ViewAthletePage = () => {
   const id = useParams().id as string;
@@ -28,6 +31,9 @@ const ViewAthletePage = () => {
     <PageContainer breadcrumbs={breadcrumbs} title={title || `Yuklanmoqda...`}>
       <Common />
       <Params />
+      <Trainings />
+      <FatiguesByTrainingGraph />
+      <KLoadGraph />
     </PageContainer>
   );
 };

@@ -8,7 +8,6 @@ import SignInPage from "./pages/signin";
 import AthletesPage from "./pages/athletes";
 import { ViewAthletePage } from "./pages/view-athlete";
 import { ViewTrainingPage } from "./pages/view-training";
-import { ViewAthleteTrainingsPage } from "./pages/view-athlete-trainings";
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
@@ -38,10 +37,7 @@ const router = createBrowserRouter([
             path: "athletes/:id",
             Component: ViewAthletePage,
           },
-          {
-            path: "athletes/:id/trainings",
-            Component: ViewAthleteTrainingsPage,
-          },
+
           {
             path: "athletes/:id/trainings/:trainingId",
             Component: ViewTrainingPage,
