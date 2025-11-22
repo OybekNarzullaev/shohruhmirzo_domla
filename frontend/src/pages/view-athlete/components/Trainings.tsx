@@ -1,17 +1,19 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddIcon from "@mui/icons-material/Add";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Box,
   Button,
+  Checkbox,
   Chip,
   IconButton,
   Skeleton,
@@ -41,10 +43,11 @@ export const Trainings = () => {
   const { id } = useParams<{ id: any }>();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [selected, setSelected] = useState<TrainingSession | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const notifications = useNotifications();
 
   // === 1. Mashg‘ulotlar ===
@@ -172,7 +175,17 @@ export const Trainings = () => {
 
         <AccordionDetails sx={{ p: { xs: 2, sm: 3 } }}>
           {/* Qo'shish tugmasi */}
-          <Stack direction="row" justifyContent="flex-end" mb={2}>
+          <Stack direction="row" spacing={1} justifyContent="flex-end" mb={2}>
+            <Button
+              variant="contained"
+              startIcon={<CompareArrowsIcon />}
+              onClick={() => {
+                navigate(`trainings/compare?ids=${selectedIds.join(",")}`);
+              }}
+              disabled={selectedIds.length < 2}
+            >
+              Solishtirish
+            </Button>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -212,6 +225,7 @@ export const Trainings = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell></TableCell>
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
                     >
@@ -279,6 +293,19 @@ export const Trainings = () => {
                         transition: "background 0.2s",
                       }}
                     >
+                      <TableCell>
+                        <Checkbox
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds([...selectedIds, t.id]);
+                            } else {
+                              setSelectedIds(
+                                selectedIds.filter((i) => i === t.id)
+                              );
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
                           {i + 1}

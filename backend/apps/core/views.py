@@ -85,6 +85,12 @@ class AthleteViewSet(viewsets.ModelViewSet):
         """
         athlete: Athlete = self.get_object()
 
+        training_ids = request.query_params.get("training_ids")
+        if training_ids:
+            training_ids = training_ids.split(',')
+        else:
+            training_ids = []
+
         # 1. Qaysi muskullar ishlatilganligini aniqlaymiz (sportchi haqiqatan ishlaganlari!)
         used_muscle_shortnames = MuscleFatigue.objects.filter(
             exercise__training__athlete=athlete
@@ -111,9 +117,13 @@ class AthleteViewSet(viewsets.ModelViewSet):
                 "signals": {},
             })
 
-        # 2. Mashg‘ulotlarni tartib bilan olamiz
-        trainings = TrainingSession.objects.filter(
-            athlete=athlete).order_by("created_at")
+        if len(training_ids) == 0:
+            trainings = TrainingSession.objects.filter(
+                athlete=athlete).order_by("created_at")
+        else:
+            trainings = TrainingSession.objects.filter(
+                id__in=training_ids,
+                athlete=athlete).order_by("created_at")
 
         # Natija konteynerlari
         titles = []       # X o‘qi: Mashg‘ulot nomlari
@@ -162,7 +172,11 @@ class AthleteViewSet(viewsets.ModelViewSet):
         Agar berilmasa → sportchida hech bo‘lmaganda bitta mashqda ishlagan BARCHA muskullar avtomatik olinadi
         """
         athlete: Athlete = self.get_object()
-
+        training_ids = request.query_params.get("training_ids")
+        if training_ids:
+            training_ids = training_ids.split(',')
+        else:
+            training_ids = []
         # 1. Sportchida ishlatilgan barcha muskullarni aniqlaymiz
         used_muscle_shortnames = MuscleFatigue.objects.filter(
             exercise__training__athlete=athlete
@@ -189,8 +203,13 @@ class AthleteViewSet(viewsets.ModelViewSet):
             })
 
         # 2. Mashg‘ulotlarni tartib bilan olamiz
-        trainings = TrainingSession.objects.filter(
-            athlete=athlete).order_by("created_at")
+        if len(training_ids) == 0:
+            trainings = TrainingSession.objects.filter(
+                athlete=athlete).order_by("created_at")
+        else:
+            trainings = TrainingSession.objects.filter(
+                id__in=training_ids,
+                athlete=athlete).order_by("created_at")
 
         # Natija konteynerlari
         titles = []                    # X o‘qi: Mashg‘ulot nomlari
@@ -231,6 +250,123 @@ class AthleteViewSet(viewsets.ModelViewSet):
                 "titles": titles,                            # X o‘qi
                 **signals                                    # Har bir muskulning qiymatlari
             }
+        })
+
+    @action(detail=True, methods=["get"], url_path="compare-trainings-by-muscle")
+    def compare_trainings_by_muscle(self, request, pk=None):
+        athlete = self.get_object()
+
+        ids_param = request.query_params.get("ids")
+        if not ids_param:
+            return Response({"error": "ids parametri majburiy"}, status=400)
+
+        try:
+            training_ids = [int(x) for x in ids_param.split(
+                ",") if x.strip().isdigit()]
+        except ValueError:
+            return Response({"error": "ids noto‘g‘ri formatda"}, status=400)
+
+        if not training_ids:
+            return Response({"error": "Hech qanday trening tanlanmagan"}, status=400)
+
+        # Faqat ushbu sportchiga tegishli treninglarni olamiz
+        trainings = TrainingSession.objects.filter(
+            id__in=training_ids,
+            athlete=athlete
+        ).select_related("sport_type").order_by("created_at")
+
+        if not trainings.exists():
+            return Response({
+                "rows_count": 0,
+                "columns": [],
+                "signals": {},
+                "training_info": [],
+                "compared_count": 0
+            })
+
+        # Har bir treningdagi maksimal mashq sonini topamiz (X o‘qi uzunligi)
+        max_exercises = 0
+        exercise_counts = {}
+        for training in trainings:
+            count = Exercise.objects.filter(training=training).count()
+            exercise_counts[training.id] = count
+            max_exercises = max(max_exercises, count)
+
+        if max_exercises == 0:
+            return Response({
+                "rows_count": 0,
+                "columns": [],
+                "signals": {},
+                "training_info": [...],
+            })
+
+        # Ishlatilgan muskullarni aniqlash
+        used_muscles = MuscleFatigue.objects.filter(
+            exercise__training__in=trainings
+        ).values_list("muscle__shortname", flat=True).distinct()
+
+        muscles_filter = request.query_params.get("muscles")
+        if muscles_filter:
+            requested = [m.strip().upper()
+                         for m in muscles_filter.split(",") if m.strip()]
+            used_muscles = [m for m in used_muscles if m in requested]
+
+        if not used_muscles:
+            return Response({
+                "rows_count": max_exercises,
+                "columns": [],
+                "signals": {},
+                "training_info": [...],
+            })
+
+        muscles = Muscle.objects.filter(
+            shortname__in=used_muscles).order_by("title")
+
+        # Training info (legend uchun)
+        training_info = []
+        training_names = {}
+        for t in trainings:
+            date_str = t.created_at.strftime("%d.%m.%Y")
+            name = t.title + " (" + date_str + ")" if t.title else date_str
+            training_names[t.id] = name
+            training_info.append({
+                "id": t.id,
+                "name": name,
+                "date": t.created_at.strftime("%Y-%m-%d"),
+            })
+
+        # signals: { muscle_shortname: { training_name: [fatigue_values...] } }
+        signals = {}
+
+        for muscle in muscles:
+            shortname = muscle.shortname
+            signals[shortname] = {}
+
+            for training in trainings:
+                exercises = Exercise.objects.filter(
+                    training=training).order_by("first_count")
+                fatigues = MuscleFatigue.objects.filter(
+                    exercise__in=exercises,
+                    muscle=muscle
+                ).order_by("exercise__first_count").values_list("fatigue", flat=True)
+
+                values = []
+                for f in fatigues:
+                    values.append(round(float(f), 3) if f is not None else 0.0)
+
+                # Agar mashqlar soni kam bo‘lsa — 0 bilan to‘ldiramiz
+                if len(values) < max_exercises:
+                    values.extend([0.0] * (max_exercises - len(values)))
+                values = values[:max_exercises]  # kesib tashlash
+
+                signals[shortname][training_names[training.id]] = values
+
+        return Response({
+            "compared_count": len(trainings),
+            "rows_count": max_exercises,
+            "columns": [m.shortname for m in muscles],
+            "signals": signals,
+            "training_info": training_info,
         })
 
 
@@ -291,8 +427,13 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         if self.action == "list":  # faqat GET list uchun filterlash
             athlete_id = self.request.query_params.get("athlete_id")
+            ids = self.request.query_params.get("ids")
             if athlete_id:
                 queryset = queryset.filter(athlete_id=athlete_id)
+            if ids:
+                ids_list = ids.split(',')
+                if len(ids_list) > 0:
+                    queryset = queryset.filter(id__in=ids_list)
         return queryset
 
     @transaction.atomic

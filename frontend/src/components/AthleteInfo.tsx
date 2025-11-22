@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 import {
   Accordion,
   AccordionDetails,
@@ -29,8 +29,7 @@ import { getAthleteAPI } from "@/api/athletes";
 import React, { useState } from "react";
 import { formatDataTimeISO } from "@/utils/funtions";
 
-export const Common = () => {
-  const { id } = useParams<{ id: string }>();
+export const AthleteInfo = ({ id }: { id: string | number }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 

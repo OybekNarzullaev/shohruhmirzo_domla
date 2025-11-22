@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { kLoadGraphAPI } from "../../../api/athletes"; // endi muscle parametri yo'q
-import { useParams } from "react-router";
+import { kLoadGraphAPI } from "@/api/athletes"; // endi muscle parametri yo'q
 import { useEffect, useState } from "react";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
@@ -25,15 +24,25 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { Layout, Data } from "plotly.js";
 import Plot from "react-plotly.js";
+import { useMuscles } from "@/store/muscle";
+import { formatMuscleTitle } from "@/utils/funtions";
 
-export const KLoadGraph = () => {
-  const { id } = useParams<{ id: string }>();
+export const KLoadGraph = ({
+  id,
+  training_ids,
+}: {
+  id: string | number;
+  training_ids?: string;
+}) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
   const [expanded, setExpanded] = useState(true);
   const [visibleMuscles, setVisibleMuscles] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<"line" | "bar">("line");
+
+  const { muscles } = useMuscles();
+  console.log(muscles);
 
   // Bitta so'rov — barcha muskullar uchun K-Load
   const {
@@ -43,7 +52,7 @@ export const KLoadGraph = () => {
     isError,
   } = useQuery({
     queryKey: ["k-load-all", id],
-    queryFn: () => kLoadGraphAPI(id as any), // parametr yo'q!
+    queryFn: () => kLoadGraphAPI(id as any, training_ids), // parametr yo'q!
     enabled: !!id,
     refetchOnWindowFocus: false,
   });
@@ -119,19 +128,15 @@ export const KLoadGraph = () => {
   });
 
   const layout: Partial<Layout> = {
-    title: {
-      text: "Yuklamaga moslashish (K-Load) – Barcha muskullar",
-      font: { size: 18, color: isDark ? "#fff" : "#000" },
-    },
     xaxis: {
-      title: { text: "Mashg‘ulotlar", font: { size: 14 } },
+      title: { text: "Mashg‘ulotlar ketma-ketligi", font: { size: 14 } },
       tickmode: "array",
       tickvals: signals.titles?.map((_: any, i: number) => i),
       ticktext: signals.titles || [],
       gridcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
     },
     yaxis: {
-      title: { text: "K-Load qiymati", font: { size: 14 } },
+      title: { text: "Yuklamaga moslashish", font: { size: 14 } },
       gridcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
     },
     hovermode: "x unified",
@@ -184,14 +189,17 @@ export const KLoadGraph = () => {
         }}
       >
         <Typography variant="h6" fontWeight="medium">
-          Yuklamaga moslashish (K-Load) – Barcha muskullar
+          Mashg'ulotlar kesimida yuklamaga moslashish holati
         </Typography>
       </AccordionSummary>
 
       <AccordionDetails sx={{ p: { xs: 2, sm: 3 } }}>
         <Stack spacing={3}>
           {/* Nazorat paneli */}
-          <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover" }}
+          >
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={2}
@@ -244,7 +252,11 @@ export const KLoadGraph = () => {
                       size="small"
                     />
                   }
-                  label={shortname}
+                  label={
+                    formatMuscleTitle(
+                      muscles.find((m) => m.shortname === shortname)
+                    ) ?? shortname
+                  }
                   sx={{ m: 0 }}
                 />
               ))}

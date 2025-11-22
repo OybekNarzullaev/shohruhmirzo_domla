@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fatigueByTrainingGraph } from "../../../api/athletes";
-import { useParams } from "react-router";
+import { fatigueByTrainingGraph } from "@/api/athletes";
 import { useEffect, useState } from "react";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
@@ -25,15 +24,24 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { Layout, Data } from "plotly.js";
 import Plot from "react-plotly.js";
+import { formatMuscleTitle } from "@/utils/funtions";
+import { useMuscles } from "@/store/muscle";
 
-export const FatiguesByTrainingGraph = () => {
-  const { id } = useParams<{ id: string }>();
+export const FatiguesByTrainingGraph = ({
+  id,
+  training_ids,
+}: {
+  id: string | number;
+  training_ids?: string;
+}) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
   const [expanded, setExpanded] = useState(true);
   const [visibleMuscles, setVisibleMuscles] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<"line" | "bar">("line");
+
+  const { muscles } = useMuscles();
 
   // Bitta so'rov — barcha muskullar uchun o'rtacha charchoq
   const {
@@ -43,7 +51,7 @@ export const FatiguesByTrainingGraph = () => {
     isError,
   } = useQuery({
     queryKey: ["fatigue-all", id],
-    queryFn: () => fatigueByTrainingGraph(id as any), // endi muscle parametri yo'q!
+    queryFn: () => fatigueByTrainingGraph(id as any, training_ids), // endi muscle parametri yo'q!
     enabled: !!id,
     refetchOnWindowFocus: false,
   });
@@ -119,12 +127,8 @@ export const FatiguesByTrainingGraph = () => {
   });
 
   const layout: Partial<Layout> = {
-    title: {
-      text: "O'rtacha charchoq – Barcha muskullar",
-      font: { size: 18, color: isDark ? "#fff" : "#000" },
-    },
     xaxis: {
-      title: { text: "Mashg‘ulotlar", font: { size: 14 } },
+      title: { text: "Mashg‘ulotlar ketma-ketligi", font: { size: 14 } },
       tickmode: "array",
       tickvals: signals.titles?.map((_: any, i: number) => i),
       ticktext: signals.titles || [],
@@ -184,14 +188,17 @@ export const FatiguesByTrainingGraph = () => {
         }}
       >
         <Typography variant="h6" fontWeight="medium">
-          O'rtacha charchoq – Barcha muskullar
+          Mashg'ulotlar kesimida charchoq holati
         </Typography>
       </AccordionSummary>
 
       <AccordionDetails sx={{ p: { xs: 2, sm: 3 } }}>
         <Stack spacing={3}>
           {/* Nazorat paneli */}
-          <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover" }}
+          >
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={2}
@@ -244,7 +251,11 @@ export const FatiguesByTrainingGraph = () => {
                       size="small"
                     />
                   }
-                  label={shortname}
+                  label={
+                    formatMuscleTitle(
+                      muscles.find((m) => m.shortname === shortname)
+                    ) ?? shortname
+                  }
                   sx={{ m: 0 }}
                 />
               ))}

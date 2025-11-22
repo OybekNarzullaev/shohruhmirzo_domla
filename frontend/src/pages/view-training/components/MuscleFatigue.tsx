@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { muscleFatigueGraphAPI } from "@/api/training"; // YANGI: barcha muskullar uchun endpoint kerak!
+import { muscleFatigueGraphAPI } from "@/api/training";
 
 import { useEffect, useState } from "react";
 import SyncIcon from "@mui/icons-material/Sync";
@@ -26,17 +26,19 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { Layout, Data } from "plotly.js";
 import Plot from "react-plotly.js";
 import { useParams } from "react-router";
+import { useMuscles } from "@/store/muscle";
+import { formatMuscleTitle } from "@/utils/funtions";
 
 export const MuscleFatigue = () => {
   const theme = useTheme();
   const training_id = useParams().trainingId as string;
   const isDark = theme.palette.mode === "dark";
 
+  const { muscles } = useMuscles();
   const [expanded, setExpanded] = useState(true);
   const [visibleMuscles, setVisibleMuscles] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<"line" | "bar">("line");
 
-  // Bitta so'rov — barcha muskullar uchun charchoq (yangi backend endpointi!)
   const {
     data: graphData = {},
     refetch: refetchGraph,
@@ -44,24 +46,20 @@ export const MuscleFatigue = () => {
     isError,
   } = useQuery({
     queryKey: ["muscle-fatigue-by-training", training_id],
-    queryFn: () => muscleFatigueGraphAPI(training_id), // YANGI endpoint
+    queryFn: () => muscleFatigueGraphAPI(training_id),
     enabled: !!training_id,
     refetchOnWindowFocus: false,
   });
 
   const { signals = {}, columns = [], rows_count = 0 } = graphData as any;
-
-  // X o'qi: 1 dan rows_count gacha
   const x = Array.from({ length: rows_count }, (_, i) => i + 1);
 
-  // Yuklanganda barcha muskullarni avto-tanlash
   useEffect(() => {
     if (columns.length > 0) {
       setVisibleMuscles(new Set(columns));
     }
   }, [columns]);
 
-  // Tracelarni yaratish
   const traces: Data[] = columns
     .filter((col: string) => visibleMuscles.has(col))
     .map((col: string) => {
@@ -89,7 +87,6 @@ export const MuscleFatigue = () => {
       }
     });
 
-  // Rang palitrasi
   const colors = [
     "#1f77b4",
     "#ff7f0e",
@@ -122,6 +119,7 @@ export const MuscleFatigue = () => {
     }
   });
 
+  // === ENG MUHIM O'ZGARTIRISH: tickmode: "auto" + rangeslider ===
   const layout: Partial<Layout> = {
     title: {
       text: "Muskullar boʻyicha charchoq dinamikasi (bitta mashgʻulot ichida)",
@@ -129,18 +127,43 @@ export const MuscleFatigue = () => {
     },
     xaxis: {
       title: { text: "Mashqlar ketma-ketligi", font: { size: 14 } },
-      tickmode: "linear",
-      dtick: 1,
+      tickmode: "auto", // ← Bu eng muhimi! Zoom qilganda avto-o'zgaradi
+      nticks: rows_count > 50 ? 15 : undefined, // Faqat katta bo'lsa cheklaymiz
+      tick0: 1,
+      tickformat: "d",
+      automargin: true,
+      showgrid: true,
       gridcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+      zeroline: false,
+      fixedrange: false,
+
+      // Qo'shimcha: pastda kichik slider (ixtiyoriy, juda qulay)
+      rangeslider: {
+        visible: true,
+        thickness: 0.05,
+        bgcolor: isDark ? "#333" : "#f0f0f0",
+      },
+      rangeselector: {
+        buttons: [
+          { count: 10, label: "10 ta", step: "all" },
+          { count: 20, label: "20 ta", step: "all" },
+          { step: "all", label: "Hammasi" },
+        ],
+        bgcolor: isDark ? "#444" : "#eee",
+        activecolor: theme.palette.primary.main,
+      },
     },
     yaxis: {
       title: { text: "Charchoq darajasi", font: { size: 14 } },
       gridcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+      zeroline: false,
+      automargin: true,
+      fixedrange: false,
     },
     hovermode: "x unified",
     barmode: chartType === "bar" ? "group" : undefined,
-    height: 580,
-    margin: { t: 90, b: 80, l: 80, r: 50 },
+    height: 620, // slider joylashishi uchun biroz balandlik qo'shdik
+    margin: { t: 90, b: 120, l: 80, r: 50 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
     showlegend: true,
@@ -193,8 +216,10 @@ export const MuscleFatigue = () => {
 
       <AccordionDetails sx={{ p: { xs: 2, sm: 3 } }}>
         <Stack spacing={3}>
-          {/* Nazorat paneli */}
-          <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, bgcolor: "action.hover", borderRadius: 2 }}
+          >
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={2}
@@ -246,7 +271,11 @@ export const MuscleFatigue = () => {
                       size="small"
                     />
                   }
-                  label={shortname}
+                  label={
+                    formatMuscleTitle(
+                      muscles.find((m) => m.shortname === shortname)
+                    ) ?? shortname
+                  }
                   sx={{ m: 0 }}
                 />
               ))}
@@ -257,14 +286,14 @@ export const MuscleFatigue = () => {
           {isLoadingGraph ? (
             <Box
               sx={{
-                minHeight: 500,
+                minHeight: 550,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Skeleton variant="rectangular" width="100%" height={500} />
+              <Skeleton variant="rectangular" width="100%" height={550} />
               <Typography color="text.secondary" mt={2}>
                 Grafik yuklanmoqda...
               </Typography>
@@ -272,7 +301,7 @@ export const MuscleFatigue = () => {
           ) : isError ? (
             <Box
               sx={{
-                minHeight: 500,
+                minHeight: 550,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -284,7 +313,7 @@ export const MuscleFatigue = () => {
           ) : columns.length === 0 ? (
             <Box
               sx={{
-                minHeight: 500,
+                minHeight: 550,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -297,7 +326,7 @@ export const MuscleFatigue = () => {
           ) : traces.length === 0 ? (
             <Box
               sx={{
-                minHeight: 500,
+                minHeight: 550,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -317,7 +346,7 @@ export const MuscleFatigue = () => {
                   displaylogo: false,
                   modeBarButtonsToRemove: ["lasso2d", "select2d"],
                 }}
-                style={{ width: "100%", minWidth: 700, height: 580 }}
+                style={{ width: "100%", minWidth: 700, height: 620 }}
               />
             </Box>
           )}

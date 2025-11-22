@@ -9,14 +9,25 @@ export const getAthleteAPI = async (id: number | string): Promise<Athlete> => {
   return data;
 };
 
-export const kLoadGraphAPI = async (id: number | string): Promise<any> => {
-  const { data } = await api.get(`${BASE_URL}${id}/k_load_graph/`);
+export const kLoadGraphAPI = async (
+  id: number | string,
+  training_ids?: string
+): Promise<any> => {
+  const { data } = await api.get(`${BASE_URL}${id}/k_load_graph/`, {
+    params: { training_ids },
+  });
   return data;
 };
 export const fatigueByTrainingGraph = async (
-  id: number | string
+  id: number | string,
+  training_ids?: string
 ): Promise<any> => {
-  const { data } = await api.get(`${BASE_URL}${id}/fatigue_by_training_graph/`);
+  const { data } = await api.get(
+    `${BASE_URL}${id}/fatigue_by_training_graph/`,
+    {
+      params: { training_ids },
+    }
+  );
   return data;
 };
 export const listAthletesAPI = async (): Promise<Pagination<Athlete>> => {
@@ -72,5 +83,21 @@ export const deleteAthleteParamAPI = async (
 
 export const listAthleteLevelsAPI = async (): Promise<AthleteLevel[]> => {
   const { data } = await api.get("/athlete-levels/");
+  return data;
+};
+
+export const compareTrainingsByMuscleAPI = async (
+  athleteId: number | string,
+  trainingIds: number[],
+  muscles?: string[]
+) => {
+  const params = new URLSearchParams();
+  params.append("ids", trainingIds.join(","));
+  if (muscles?.length) params.append("muscles", muscles.join(","));
+
+  const { data } = await api.get(
+    `/athletes/${athleteId}/compare-trainings-by-muscle/`,
+    { params }
+  );
   return data;
 };

@@ -1,18 +1,18 @@
+import { getAthleteAPI } from "@/api/athletes";
 import { useQuery } from "@tanstack/react-query";
 import { PageContainer } from "@toolpad/core/PageContainer";
-import { useParams } from "react-router";
-import { getAthleteAPI } from "../../api/athletes";
 import { useActivePage } from "@toolpad/core/useActivePage";
 import invariant from "invariant";
-
-import { Params } from "./components/Params";
-import { Trainings } from "./components/Trainings";
+import { useParams, useSearchParams } from "react-router";
+import { CompareMuscleGraph } from "./components/CompareMuscleGraph";
 import { AthleteInfo } from "@/components/AthleteInfo";
 import { FatiguesByTrainingGraph } from "@/components/FatiguesByTrainingGraph";
 import { KLoadGraph } from "@/components/KLoadGraph";
 
-const ViewAthletePage = () => {
+const CompareAthleteTrainingsPage = () => {
   const id = useParams().id as string;
+  const [searchParams] = useSearchParams();
+  const ids = searchParams.get("ids") as string;
 
   //   asosisy
   const { data: athlete } = useQuery({
@@ -30,12 +30,14 @@ const ViewAthletePage = () => {
   return (
     <PageContainer breadcrumbs={breadcrumbs} title={title || `Yuklanmoqda...`}>
       <AthleteInfo id={id} />
-      <Params />
-      <Trainings />
-      <FatiguesByTrainingGraph id={id} />
-      <KLoadGraph id={id} />
+      <CompareMuscleGraph
+        athleteId={id}
+        selectedTrainingIds={ids.split(",").map((s) => parseInt(s))}
+      />
+      <FatiguesByTrainingGraph id={id} training_ids={ids} />
+      <KLoadGraph id={id} training_ids={ids} />
     </PageContainer>
   );
 };
 
-export default ViewAthletePage;
+export default CompareAthleteTrainingsPage;

@@ -165,7 +165,7 @@ export const Exercises = () => {
             </Typography>
           </Box>
         ) : (
-          <Paper sx={{ overflow: "hidden" }}>
+          <Paper sx={{ overflow: "hidden" }} variant="outlined">
             <TableContainer>
               <Table stickyHeader size="small">
                 <TableHead>
@@ -178,17 +178,17 @@ export const Exercises = () => {
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
                     >
-                      Boshi / Oxiri
+                      Boshlanish/Tugash vaqti (ms)
                     </TableCell>
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
                     >
-                      Uzunligi
+                      Mash davomiyligi (ms)
                     </TableCell>
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
                     >
-                      Yurak darajasi
+                      Yurak qisqarishlar soni
                     </TableCell>
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
@@ -198,7 +198,7 @@ export const Exercises = () => {
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
                     >
-                      Charchoq
+                      Charchoq qiymati
                     </TableCell>
                     <TableCell
                       sx={{ fontWeight: "bold", color: textSecondary }}
@@ -242,7 +242,7 @@ export const Exercises = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={`${ex.signal_length} s`}
+                          label={`${ex.signal_length}`}
                           size="small"
                           color="info"
                           sx={{ fontWeight: "bold" }}
@@ -342,7 +342,6 @@ export const Exercises = () => {
               }
               sx={{
                 borderTop: `1px solid ${borderColor}`,
-                bgcolor: isDark ? "grey.800" : "grey.50",
               }}
             />
           </Paper>

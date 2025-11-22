@@ -8,6 +8,7 @@ import SignInPage from "./pages/signin";
 import AthletesPage from "./pages/athletes";
 import { ViewAthletePage } from "./pages/view-athlete";
 import { ViewTrainingPage } from "./pages/view-training";
+import { CompareAthleteTrainingsPage } from "./pages/compare-athlete-trainings";
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
           {
             path: "athletes/:id/trainings/:trainingId",
             Component: ViewTrainingPage,
+          },
+          {
+            path: "athletes/:id/trainings/compare",
+            Component: CompareAthleteTrainingsPage as any,
           },
           {
             path: "athletes",
